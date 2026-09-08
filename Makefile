@@ -4,7 +4,9 @@ CPPFLAGS ?= -Iinclude
 
 BIN := bin/uxncli
 EMU_BIN := bin/uxnemu
+CONSTELLATION_BIN := bin/constellation-v0
 TEST_BIN := build/test_uxn
+CONSTELLATION_TEST_BIN := build/test_constellation
 REAL_ROM_TEST_BIN := build/test_real_roms
 LESSON_MEMORY_BIN := build/lesson-memory
 PIXEL_ROM := build/pixel.rom
@@ -17,7 +19,7 @@ ROM_SOURCE := src/rom.c
 SDL_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
 
-.PHONY: all check test compatibility verify-online real-roms example assembler lesson-memory clean
+.PHONY: all check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
 
 all: $(BIN) $(EMU_BIN)
 
@@ -27,8 +29,14 @@ $(BIN): src/main.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h
 $(EMU_BIN): src/emu.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | bin
 	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/emu.c $(ROM_SOURCE) $(CORE_SOURCES) $(SDL_LIBS) -o $@
 
+$(CONSTELLATION_BIN): src/constellation_main.c src/constellation.c src/uxn.c include/constellation.h include/uxn.h | bin
+	$(CC) $(CPPFLAGS) $(CFLAGS) src/constellation_main.c src/constellation.c src/uxn.c -o $@
+
 $(TEST_BIN): tests/test_uxn.c $(CORE_SOURCES) include/uxn.h include/varvara.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_uxn.c $(CORE_SOURCES) -o $@
+
+$(CONSTELLATION_TEST_BIN): tests/test_constellation.c src/constellation.c src/uxn.c include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_constellation.c src/constellation.c src/uxn.c -o $@
 
 $(REAL_ROM_TEST_BIN): tests/test_real_roms.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_real_roms.c $(ROM_SOURCE) $(CORE_SOURCES) -o $@
@@ -49,8 +57,16 @@ $(HELLO_ROM): examples/hello.tal $(ASSEMBLER_ROM) $(BIN)
 bin build:
 	mkdir -p $@
 
-test: $(TEST_BIN)
+test: $(TEST_BIN) $(CONSTELLATION_TEST_BIN)
 	./$(TEST_BIN)
+	./$(CONSTELLATION_TEST_BIN)
+
+build/constellation-%.rom: examples/constellation-%.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+
+constellation: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/constellation-ping.rom build/constellation-pong.rom
+	./$(CONSTELLATION_BIN) build/constellation-ping.rom build/constellation-pong.rom
+	./$(CONSTELLATION_TEST_BIN) build/constellation-ping.rom build/constellation-pong.rom
 
 check: all test $(PIXEL_ROM)
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./$(EMU_BIN) \

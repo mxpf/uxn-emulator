@@ -106,6 +106,8 @@ checks for typing, drawing, saving files, and producing sound.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
+- [Constellation v0](docs/CONSTELLATION-V0.md) documents the isolated two-ROM
+  message-passing prototype.
 - [Why We Built a Small Virtual Computer](https://keeping.haus/why-we-built-a-small-virtual-computer/)
   explains the larger idea behind the project.
 
