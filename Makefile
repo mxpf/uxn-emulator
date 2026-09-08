@@ -75,6 +75,24 @@ constellation-recovery: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/con
 
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
+EMCC ?= emcc
+
+.PHONY: garden-web garden-web-check
+garden-web: $(GARDEN_ROMS)
+	mkdir -p build/web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/garden_web.c $(GARDEN_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createGarden -sSTACK_SIZE=262144 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
+		--embed-file build/garden-view.rom --embed-file build/garden-world.rom \
+		-o build/web/garden.js
+	cp web/index.html web/style.css web/app.js $(GARDEN_ROMS) build/web/
+	cp web/.nojekyll build/web/
+
+build/garden_native_digest: tests/garden_native_digest.c src/garden_web.c $(GARDEN_SOURCES) include/garden.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/garden_native_digest.c src/garden_web.c $(GARDEN_SOURCES) -o $@
+
+garden-web-check: garden-web build/garden_native_digest
+	node tests/garden_web_parity.cjs
 
 build/garden-%.rom: examples/garden-%.tal $(ASSEMBLER_ROM) $(BIN)
 	./$(BIN) $(ASSEMBLER_ROM) $< $@

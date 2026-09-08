@@ -101,6 +101,9 @@ checks for typing, drawing, saving files, and producing sound.
 
 ## Read further
 
+Build its browser version with `make garden-web-check` (Emscripten required),
+then serve `build/web/`. See [browser instructions and portability contract](docs/TINY-NEIGHBORS.md#browser-host).
+
 Try the first Constellation game with `make garden`: a two-ROM garden with a
 wandering creature, a live message panel, and recorded input replay. See
 [Tiny Neighbors](docs/TINY-NEIGHBORS.md) for controls and the protocol.

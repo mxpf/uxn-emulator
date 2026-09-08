@@ -115,3 +115,58 @@ Script letters are N/E/S/W, G for greet, and a dot for wait.
 proximity and greeting tests. It also compares two 1,000-tick runs for identical
 traces, RAM, device bytes and pixels, checking empty stacks after each tick.
 The SDL host then renders the scripted encounter to `build/garden.bmp`.
+
+## Browser host
+
+With Emscripten installed and activated (tested with 4.0.15), run:
+
+```sh
+make garden-web-check
+python3 -m http.server 8765 --bind 127.0.0.1 --directory build/web
+```
+
+Open `http://127.0.0.1:8765`. The self-contained `build/web/` directory is the
+static publish artifact. Serve over HTTP(S), not `file://`. It uses relative
+asset paths and can live at a domain root or a path such as `/tiny-neighbors/`.
+Serve `.wasm` as `application/wasm`. No runtime CDN, account, analytics, backend,
+or host filesystem access is required. Initial loading fetches the page and
+bundled program; play does not send network requests. This release does not
+include offline installation, persistence, replay-file import/export, or arbitrary
+ROM loading. The native CLI remains available for recording/replay.
+
+The browser starts paused. Play runs four ticks per second; direction keys can
+be held. Touch buttons submit one action per tap. While paused, directions and
+greeting execute one turn immediately; Step/N executes a wait turn. Reset boots
+both ROMs again and clears history. Leaving the tab/window pauses and clears
+held/pending input; resuming never catches up elapsed time. Faults stop execution
+and leave the garden and error visible until reset.
+
+The browser compiles **the same** `uxn.c`, `constellation.c`, and `garden.c`.
+`garden_web.c` only exposes reset, bounded step, pixels, snapshot and diagnostics.
+JavaScript converts the shared ARGB pixel buffer to canvas RGBA, handles input,
+and displays message summaries. The ROM binaries are embedded unchanged; the
+standalone downloads are copies of those same files. No game rules live in JS.
+
+`make garden-web-check` compares native and WebAssembly message and canonical
+pixel fingerprints at boot and after 1,010 inputs, then tests terminal faults
+and reset. With the site served and `agent-browser` installed, also run:
+
+```sh
+node tests/garden_browser_check.cjs http://127.0.0.1:8765
+```
+
+This repeats parity in a browser engine and checks canvas output, the keyboard
+greeting path, button input, play, blur/pause, reset and narrow-screen overflow.
+These are diagnostic hashes, not exhaustive proof for every possible input.
+
+### Portability rule for future ROMs
+
+This garden's portable contract is the documented Port, sprite and logical-input
+devices above, including the six-color palette in `garden.c`, memory limits and
+instruction/turn budgets. Both hosts implement it through the same C code.
+Future ROMs must declare the device contract they need and be tested on each
+supported host. Native filesystem, process execution, audio and other additional
+capabilities are **not** promised by this browser host. Extend the documented
+contract and host tests before depending on a new capability; do not silently
+substitute different behavior. This is a portable Constellation garden host,
+not a browser port of the complete Varvara desktop emulator.
