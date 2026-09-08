@@ -1,165 +1,122 @@
-# Our Uxn and Varvara emulator
+# Uxn Emulator
 
-This project is a small virtual computer written in C. It runs Uxn ROMs and
-provides the current Varvara 79K devices: System, Console, Screen, four Audio
-voices, Controller, Mouse, two File devices, and DateTime.
+This is a small [Uxn](https://wiki.xxiivv.com/site/uxn.html) and
+[Varvara](https://wiki.xxiivv.com/site/varvara.html) emulator written in C.
+I built it to learn how a virtual computer works by following the whole path
+from bytes in a file to words, pictures, and sound.
 
-The code is split into small files so each part can be read and tested without
-opening one very large source file.
+The project is intentionally readable. The processor, screen, audio, files,
+and desktop window live in separate C files, and the documentation explains
+why each part exists. It is a learning project, but it is also a working host
+for Uxn ROMs.
 
-## Build it on a Mac
+**[Read the complete beginner tutorial](https://keeping.haus/a-small-computer-we-can-understand/)**
 
-The command-line runner only needs a C compiler and Make. The windowed runner
-also needs SDL2, a library that opens the window and connects sound and input.
+## What it can do
 
-~~~sh
+The emulator provides the current Varvara 79K devices: System, Console,
+Screen, four Audio voices, Controller, Mouse, two File devices, and DateTime.
+
+It builds two programs:
+
+- `uxncli` runs text programs and tools in the terminal.
+- `uxnemu` runs programs with a window, sound, keyboard, mouse, and game
+  controller input.
+
+The window can also open a ROM by drag and drop. If the ROM includes a name in
+its Varvara metadata, that name appears in the title bar.
+
+## Start locally
+
+The project has been built and tested on macOS. The command-line host needs a
+C compiler and Make. The windowed host also needs SDL2.
+
+```bash
 brew install sdl2 pkg-config
+git clone https://github.com/mxpf/uxn-emulator.git
+cd uxn-emulator
 make
-~~~
+```
 
-The build creates two executables:
+Run a graphical or audio ROM:
 
-- `bin/uxncli` runs text-based ROMs in the terminal.
-- `bin/uxnemu` runs graphical and audio ROMs in a native window.
-
-## Build and run the included greeting
-
-~~~sh
-make example
-~~~
-
-This downloads Drifblim, the official assembler written in Uxntal. Our
-command-line emulator runs Drifblim to turn `examples/hello.tal` into a ROM,
-then runs that ROM. The result should be:
-
-~~~text
-Hello from our Uxn!
-~~~
-
-This also proves that the File device works: the assembler is itself a Uxn ROM
-that reads the source file and writes the new ROM file.
-
-## Run a ROM
-
-~~~sh
+```bash
 bin/uxnemu program.rom
+```
+
+Run a terminal ROM:
+
+```bash
 bin/uxncli program.rom
-~~~
+```
 
-Use `--scale 2` or the shorter `-2` to start the window at twice its normal
-size. Use `-f` to start fullscreen.
+To see the whole path working, build and run the included greeting:
 
-You can also drop another `.rom` file onto the open window. The emulator
-restarts with that ROM. If the ROM supplies Varvara metadata, its name appears
-in the window title; otherwise the filename is used. These are window
-conveniences only. ROMs do not need to know they exist.
+```bash
+make example
+```
 
-The window controls match the reference emulator:
+This runs the Drifblim assembler inside the emulator, turns readable Uxntal
+into a ROM, and then runs that ROM. The result is:
 
-- Arrow keys: direction buttons
-- Control, Option, Shift, and Home: A, B, Select, and Start
-- F1: change window scale
-- F2: print both Uxn stacks
-- F3: quit
-- F4: hard restart
-- F5: soft restart, preserving Uxn's first 256 memory bytes
-- F11: toggle fullscreen
-- F12: toggle the window border
+```text
+Hello from our Uxn!
+```
 
-Text input, mouse input, scrolling, terminal input, and standard SDL game
-controllers are also connected to their Varvara devices.
+## A small safety boundary
 
-## File access
+ROMs can ask Varvara to use files or start commands on the host computer. File
+access stays inside the folder where the emulator was started. A trusted ROM
+can receive wider access for one run:
 
-A ROM can ask Varvara to read or write files. By default, this emulator keeps
-those requests inside the folder where it was launched and refuses paths that
-escape through `..`, an absolute path, or a symbolic link.
-
-For a trusted ROM that needs the reference emulator's unrestricted file
-behavior, opt in explicitly:
-
-~~~sh
+```bash
 bin/uxnemu --allow-filesystem program.rom
-bin/uxncli --allow-filesystem program.rom
-~~~
-
-## Host commands
-
-Some Uxn programs use the optional Console `exec` ports to run a command on the
-host computer. This can do anything your user account can do, so it is denied
-unless you give a trusted ROM explicit permission:
-
-~~~sh
 bin/uxnemu --allow-exec program.rom
-bin/uxncli --allow-exec program.rom
-~~~
+```
 
-This extension is separate from the Uxn processor. On hosts where it is not
-available, the ROM receives a failed command result.
+The permissions are separate, off by default, and never remembered.
 
-## Check it
+## Check the work
 
-Build both runners and run the checks that need no internet connection:
+Run the complete offline build and test suite:
 
-~~~sh
+```bash
 make check
-~~~
+```
 
-This includes 200 processor and device checks plus a short headless window
-run. `make test` runs only the 200 checks.
+This performs 200 processor and device checks, then runs a small graphical ROM
+without opening a visible window.
 
-Run the current official Uxn and Varvara tests when internet access is
-available:
+When an internet connection is available, compare the emulator with current
+official tests and real Hundred Rabbits programs:
 
-~~~sh
-make compatibility
-~~~
+```bash
+make verify-online
+```
 
-The compatibility check downloads the official self-hosted assembler and test
-sources into a temporary folder. It checks every opcode, wraparound behavior,
-Console and File behavior, and the Screen output pixel by pixel.
+The current implementation passes the official opcode and device checks. It
+has also assembled and opened all eight applications listed in the Hundred
+Rabbits [ROM collection](https://wiki.xxiivv.com/site/roms.html), with added
+checks for typing, drawing, saving files, and producing sound.
 
-Run the current Hundred Rabbits applications as a wider check:
+## Read further
 
-~~~sh
-make real-roms
-~~~
+- [Design promise](DESIGN.md) explains what belongs in the project and where
+  it stops.
+- [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
+- [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
+- [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
+- [Why We Built a Small Virtual Computer](https://keeping.haus/why-we-built-a-small-virtual-computer/)
+  explains the larger idea behind the project.
 
-This downloads the latest source for Dexe, Left, Nebu, Noodle, Nasu, Oekaki,
-Turye, and M/PC. Our emulator assembles each application, opens it without a
-visible window, and checks that it draws a nonblank screen. It also types and
-saves text in Left, draws and saves an icon in Noodle, and plays a note in
-CCCC. Left and Dexe are also asked to open real files.
+## Acknowledgements
 
-Run both internet-based suites together with `make verify-online`.
+Uxn, Varvara, Uxntal, Drifblim, and the programs used for compatibility checks
+come from [Hundred Rabbits](https://100r.ca/site/uxn.html) and the wider Uxn
+community. This is an independent implementation, not an official Hundred
+Rabbits release.
 
-## Project map
+## License
 
-- `src/uxn.c` is the virtual processor.
-- `src/varvara.c` connects the processor to devices.
-- `src/varvara_screen.c`, `src/varvara_audio.c`, `src/varvara_file.c`, and
-  `src/varvara_datetime.c` implement the larger devices.
-- `src/varvara_exec.c` holds the optional host-command extension.
-- `src/main.c` is the terminal runner.
-- `src/emu.c` is the SDL2 windowed runner.
-- `tests/test_uxn.c` contains local behavior checks.
-- `tests/compatibility.sh` runs the official compatibility checks.
-- `tests/real-roms.sh` builds and opens the current Hundred Rabbits apps.
-- `lessons/` contains the first small, runnable recipe examples.
-
-The supporting notes explain the project from three angles:
-
-- [Design promise](DESIGN.md): what we will add and where we stop.
-- [User guide](docs/USER-GUIDE.md): everyday commands and permission switches.
-- [Architecture](docs/ARCHITECTURE.md): how a byte moves through the program.
-- [Compatibility](docs/COMPATIBILITY.md): what has actually been checked.
-
-The full beginner recipe is published as
-[A Computer Small Enough to Understand](https://keeping.haus/a-small-computer-we-can-understand/).
-
-## References
-
-- [Uxn](https://wiki.xxiivv.com/site/uxn.html)
-- [Uxntal](https://wiki.xxiivv.com/site/uxntal.html)
-- [Varvara](https://wiki.xxiivv.com/site/varvara.html)
-- [Hundred Rabbits on Uxn](https://100r.ca/site/uxn.html)
+The emulator source and its documentation are available under the
+[MIT License](LICENSE).
