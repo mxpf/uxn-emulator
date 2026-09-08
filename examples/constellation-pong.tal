@@ -1,0 +1,12 @@
+( Reply to a received message; retry on a queue-space notification. )
+|0100
+	;send #d0 DEO2
+	#0300 #d2 DEO2
+	;send #da DEO2
+	BRK
+@send
+	;payload #d6 DEO2
+	#04 #d8 DEO
+	#01 #d9 DEO
+	BRK
+@payload "PONG

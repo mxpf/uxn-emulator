@@ -1,0 +1,26 @@
+( Send bytes 01 through 05. Four queue slots force one failed send.
+  Zero page: 00 next byte, 01 wake count, 02 failure count, 03 done.
+  Keep the pending byte in 0400 until the send succeeds. )
+|0100
+	;on-writable #da DEO2
+	#0400 #d6 DEO2
+	#01 #d8 DEO
+	#01 #00 STZ
+	!send
+
+@on-writable
+	#01 LDZ INC #01 STZ
+	!send
+
+@send
+	#00 LDZ #0400 STA
+	#01 #d9 DEO
+	#d9 DEI ?accepted
+	#02 LDZ INC #02 STZ
+	BRK
+
+@accepted
+	#00 LDZ INC DUP #00 STZ
+	#06 NEQ ?send
+	#01 #03 STZ
+	BRK
