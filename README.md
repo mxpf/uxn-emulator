@@ -101,6 +101,10 @@ checks for typing, drawing, saving files, and producing sound.
 
 ## Read further
 
+Try the first Constellation game with `make garden`: a two-ROM garden with a
+wandering creature, a live message panel, and recorded input replay. See
+[Tiny Neighbors](docs/TINY-NEIGHBORS.md) for controls and the protocol.
+
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.

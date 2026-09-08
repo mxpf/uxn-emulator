@@ -73,6 +73,27 @@ constellation-recovery: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/con
 	./$(CONSTELLATION_BIN) build/constellation-burst.rom build/constellation-collect.rom
 	./$(CONSTELLATION_TEST_BIN) --recovery build/constellation-burst.rom build/constellation-collect.rom
 
+GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
+GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
+
+build/garden-%.rom: examples/garden-%.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+
+bin/garden: src/garden_sdl.c $(GARDEN_SOURCES) include/garden.h include/constellation.h include/uxn.h | bin
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/garden_sdl.c $(GARDEN_SOURCES) $(SDL_LIBS) -o $@
+
+.PHONY: garden
+garden: bin/garden $(GARDEN_ROMS)
+	./bin/garden
+
+build/test_garden: tests/test_garden.c $(GARDEN_SOURCES) include/garden.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_garden.c $(GARDEN_SOURCES) -o $@
+
+.PHONY: garden-check
+garden-check: bin/garden build/test_garden $(GARDEN_ROMS)
+	./build/test_garden
+	SDL_VIDEODRIVER=dummy ./bin/garden --script EEEEESSSSG --screenshot build/garden.bmp
+
 check: all test $(PIXEL_ROM)
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./$(EMU_BIN) \
 		--frames 2 --screenshot build/offline-screen.bmp $(PIXEL_ROM)

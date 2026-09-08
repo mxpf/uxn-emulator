@@ -1,0 +1,51 @@
+( UI only. Host event vector e0, action byte e2.
+  Sprite device: 20 tile-x, 21 tile-y, 22 address*, 24 color, 25 draw.
+  Color bit 80 keeps the background. Snapshots arrive at 0400. )
+|0000 @tile $1 @kind $1
+|0100
+	;on-state #d0 DEO2
+	#0400 #d2 DEO2
+	;on-input #e0 DEO2
+	BRK
+
+@on-input
+	#e2 DEI #0300 STA
+	#0300 #d6 DEO2
+	#01 #d8 DEO
+	#01 #d9 DEO
+	BRK
+
+@on-state
+	#00 .tile STZ
+@draw-tile
+	.tile LDZ #0f AND #20 DEO
+	.tile LDZ #04 SFT #21 DEO
+	.tile LDZ #00 SWP #0408 ADD2 LDA .kind STZ
+	.kind LDZ #00 SWP ;colors ADD2 LDA #24 DEO
+	.kind LDZ #00 SWP #30 SFT2 ;tiles ADD2 #22 DEO2
+	#01 #25 DEO
+	.tile LDZ INC DUP .tile STZ #c0 NEQ ?draw-tile
+
+	#0400 LDA #20 DEO
+	#0401 LDA #21 DEO
+	;player #22 DEO2
+	#83 #24 DEO #01 #25 DEO
+	#0402 LDA #20 DEO
+	#0403 LDA #21 DEO
+	;creature #22 DEO2
+	#84 #24 DEO #01 #25 DEO
+	#0404 LDA #00 EQU ?done
+	#0403 LDA #01 SUB #21 DEO
+	;heart #22 DEO2
+	#83 #24 DEO #01 #25 DEO
+@done BRK
+
+@colors 0102 0503
+@tiles
+	0000 0010 0000 0000 ( grass )
+	183c 7e7e 3c18 1818 ( tree )
+	0018 2400 1824 0000 ( water )
+	0010 3810 0010 0000 ( flower )
+@player 183c 3c18 3c5a 2424
+@creature 4266 7e5a 7e3c 2442
+@heart 006c fe7c 3810 0000

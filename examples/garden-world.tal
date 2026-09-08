@@ -1,0 +1,94 @@
+( World authority. Request at 0300: 00 wait, 01 north, 02 east,
+  03 south, 04 west, 05 greet. Every request advances one logical tick.
+  Snapshot at 0400: player xy, creature xy, mood, friend, tick, reserved,
+  then 192 terrain bytes. Only this ROM changes the world. )
+|0000 @nx $1 @ny $1 @action $1 @phase $1
+|0100
+	;on-tick #d0 DEO2
+	#0300 #d2 DEO2
+	!publish
+
+@on-tick
+	#0300 LDA .action STZ
+	;state/px LDA .nx STZ
+	;state/py LDA .ny STZ
+	.action LDZ #01 EQU ?north
+	.action LDZ #02 EQU ?east
+	.action LDZ #03 EQU ?south
+	.action LDZ #04 EQU ?west
+	!check
+@north .ny LDZ #01 SUB .ny STZ !check
+@east .nx LDZ INC .nx STZ !check
+@south .ny LDZ INC .ny STZ !check
+@west .nx LDZ #01 SUB .nx STZ
+@check
+	.nx LDZ #0f GTH ?simulate
+	.ny LDZ #0b GTH ?simulate
+	.nx LDZ ;state/cx LDA EQU
+	.ny LDZ ;state/cy LDA EQU AND ?simulate
+	.ny LDZ #40 SFT .nx LDZ ADD
+	#00 SWP ;state/map ADD2 LDA
+	DUP #01 EQU SWP #02 EQU ORA ?simulate
+	.nx LDZ ;state/px STA
+	.ny LDZ ;state/py STA
+
+@simulate
+	;state/tick LDA INC ;state/tick STA
+	near ?encounter
+	;state/friend LDA ?friendly
+	#00 ;state/mood STA
+	.phase LDZ INC DUP .phase STZ #03 NEQ ?publish
+	#00 .phase STZ
+	;state/cx LDA #08 EQU ?left-side
+	;state/cy LDA #06 EQU ?move-down
+	#08 ;state/cx STA !sense
+@left-side
+	;state/cy LDA #06 EQU ?move-right
+	#06 ;state/cy STA !sense
+@move-right #09 ;state/cx STA !sense
+@move-down #07 ;state/cy STA
+@sense
+	near ;state/mood STA
+	!publish
+
+@encounter
+	#01 ;state/mood STA
+	.action LDZ #05 NEQ ?maybe-friend
+	#01 ;state/friend STA
+@maybe-friend
+	;state/friend LDA ?friendly
+	!publish
+@friendly
+	#02 ;state/mood STA
+	!publish
+
+@near ( -- close )
+	;state/px LDA ;state/cx LDA distance #02 LTH
+	;state/py LDA ;state/cy LDA distance #02 LTH AND
+	JMP2r
+@distance ( a b -- absolute-difference )
+	GTHk ?subtract
+	SWP
+@subtract SUB JMP2r
+
+@publish
+	#0400 #d6 DEO2
+	#c8 #d8 DEO
+	#01 #d9 DEO
+	BRK
+
+|0400 @state
+	&px 02 &py 02 &cx 08 &cy 06 &mood 00 &friend 00 &tick 00 00
+	&map
+	0101 0101 0101 0101 0101 0101 0101 0101
+	0100 0000 0000 0000 0000 0000 0000 0001
+	0100 0000 0003 0000 0000 0003 0000 0001
+	0100 0000 0000 0000 0000 0000 0000 0001
+	0100 0300 0000 0000 0000 0202 0200 0001
+	0100 0000 0000 0000 0000 0202 0200 0001
+	0100 0000 0000 0000 0000 0002 0000 0001
+	0100 0000 0000 0000 0000 0000 0000 0001
+	0100 0101 0000 0000 0003 0000 0000 0001
+	0100 0101 0000 0000 0000 0000 0000 0001
+	0100 0000 0000 0000 0000 0000 0003 0001
+	0101 0101 0101 0101 0101 0101 0101 0101
