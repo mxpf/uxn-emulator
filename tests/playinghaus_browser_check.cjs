@@ -14,11 +14,14 @@ try {
   assert.match(evaluate('document.title'), /Playinghaus/);
   assert.equal(evaluate('document.scripts.length'), 0);
   assert.equal(evaluate('Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)'), true);
+  assert.equal(evaluate('document.querySelector(".cartridge")'), null);
+  assert.deepEqual(evaluate('Array.from(document.querySelectorAll(".box-cover img"), i=>[i.getAttribute("src"),i.naturalWidth,i.naturalHeight])'), [['tiny-neighbors-cover.png',1024,1536]]);
   for(const width of [320,393,540,768,1440]) {
     call('set','viewport',String(width),'900');
     assert.equal(evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `overflow at ${width}`);
     assert.equal(evaluate('document.querySelector(".start").getBoundingClientRect().height >= 44'),true);
     assert.equal(evaluate('document.querySelector(".game-copy").scrollWidth <= document.querySelector(".game-copy").clientWidth'),true,`clipped title at ${width}`);
+    assert.equal(evaluate('(()=>{const cover=document.querySelector(".box-cover img").getBoundingClientRect(); const screen=document.querySelector(".screen").getBoundingClientRect(); return cover.left>=screen.left && cover.right<=screen.right && Math.abs(cover.height/cover.width-1.5)<0.01;})()'),true,`cropped or distorted cover at ${width}`);
   }
   call('set','viewport','393','852');
   call('focus','.start');
@@ -43,5 +46,5 @@ try {
   const errors=JSON.parse(call('errors','--json'));
   assert.equal(errors.success,true);
   assert.deepEqual(errors.data.errors,[]);
-  console.log('Playinghaus passed: five widths, static homepage, cartridge art, keyboard launch, game encounter, ROM downloads, return navigation, section links, no browser errors.');
+  console.log('Playinghaus passed: five widths, static homepage, painted cover art, keyboard launch, game encounter, ROM downloads, return navigation, section links, no browser errors.');
 } finally { call('close'); }

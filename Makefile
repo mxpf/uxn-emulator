@@ -85,7 +85,7 @@ garden-web: $(GARDEN_ROMS)
 		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
 		--embed-file build/garden-view.rom --embed-file build/garden-world.rom \
 		-o build/web/garden.js
-	cp web/index.html web/home.css web/neighbors.svg web/style.css web/app.js $(GARDEN_ROMS) build/web/
+	cp web/index.html web/home.css web/tiny-neighbors-cover.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
 	mkdir -p build/web/tiny-neighbors
 	cp web/tiny-neighbors/index.html build/web/tiny-neighbors/
 	cp web/.nojekyll build/web/
