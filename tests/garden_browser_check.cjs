@@ -1,7 +1,7 @@
 /* Run against a served build/web directory. Uses the agent-browser CLI. */
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
-const url = process.argv[2] || 'http://127.0.0.1:8765';
+const url = process.argv[2] || 'http://127.0.0.1:8765/tiny-neighbors/';
 const call = (...args) => execFileSync('agent-browser', ['--session','garden-check',...args], {encoding:'utf8'});
 const evaluate = source => {
   const response = JSON.parse(call('eval',source,'--json'));

@@ -1,7 +1,8 @@
 # Publishing Playing.haus
 
 The site is static GitHub Pages hosting for `mxpf/uxn-emulator`, served from
-the root of the `gh-pages` branch. Only generated browser assets belong there;
+the root of the `gh-pages` branch. The homepage lives at `/` and the game at
+`/tiny-neighbors/`. Only generated browser assets belong there;
 the editable source stays on `constellation-game`.
 
 Before publishing an update, activate Emscripten 4.0.15 and run:
@@ -36,6 +37,7 @@ so public resolution, GitHub ownership verification and HTTPS were still pending
 After propagation, finish verification at
 `https://github.com/settings/pages_verified_domains/playing.haus`, enable
 Enforce HTTPS in the repository's Pages settings, and run the browser check
-against `https://playing.haus`. Do not bypass certificate errors during testing.
+against `https://playing.haus/tiny-neighbors/`, plus the homepage check against
+`https://playing.haus/`. Do not bypass certificate errors during testing.
 
 See [GitHub's custom-domain documentation](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).

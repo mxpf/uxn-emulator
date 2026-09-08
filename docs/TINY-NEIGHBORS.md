@@ -125,7 +125,8 @@ make garden-web-check
 python3 -m http.server 8765 --bind 127.0.0.1 --directory build/web
 ```
 
-Open `http://127.0.0.1:8765`. The self-contained `build/web/` directory is the
+Open `http://127.0.0.1:8765/tiny-neighbors/`. The root URL is the Playinghaus
+cartridge-library homepage. The self-contained `build/web/` directory is the
 static publish artifact. Serve over HTTP(S), not `file://`. It uses relative
 asset paths and can live at a domain root or a path such as `/tiny-neighbors/`.
 Serve `.wasm` as `application/wasm`. No runtime CDN, account, analytics, backend,
@@ -152,7 +153,8 @@ pixel fingerprints at boot and after 1,010 inputs, then tests terminal faults
 and reset. With the site served and `agent-browser` installed, also run:
 
 ```sh
-node tests/garden_browser_check.cjs http://127.0.0.1:8765
+node tests/garden_browser_check.cjs http://127.0.0.1:8765/tiny-neighbors/
+node tests/playinghaus_browser_check.cjs http://127.0.0.1:8765/
 ```
 
 This repeats parity in a browser engine and checks canvas output, the keyboard
