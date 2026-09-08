@@ -20,15 +20,22 @@ Porkbun manages the domain. The intended DNS configuration is:
 
 | Type | Host | Value |
 | --- | --- | --- |
-| A | @ | 185.199.108.153 |
-| A | @ | 185.199.109.153 |
-| A | @ | 185.199.110.153 |
-| A | @ | 185.199.111.153 |
+| ALIAS | @ | mxpf.github.io |
 | CNAME | www | mxpf.github.io |
 
 Preserve unrelated mail/TXT records. Domain-verification TXT records should
 also remain in place. Configure the custom domain in GitHub Pages before
 pointing DNS at GitHub. Once DNS and the certificate are ready, enforce HTTPS.
 Do not add wildcard records.
+
+Initial rollout (2026-09-08): GitHub built the static artifact and accepted
+`playing.haus` as its custom domain. Porkbun's authoritative nameservers return
+the GitHub apex addresses, the `www` CNAME and the GitHub ownership TXT record.
+At handoff, the `.haus` parent zone had not yet published the new delegation,
+so public resolution, GitHub ownership verification and HTTPS were still pending.
+After propagation, finish verification at
+`https://github.com/settings/pages_verified_domains/playing.haus`, enable
+Enforce HTTPS in the repository's Pages settings, and run the browser check
+against `https://playing.haus`. Do not bypass certificate errors during testing.
 
 See [GitHub's custom-domain documentation](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
