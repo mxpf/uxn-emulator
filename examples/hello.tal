@@ -1,0 +1,15 @@
+( A first Uxntal program for our emulator. Run with: make example )
+
+|0100
+
+@on-reset ( -> )
+	;text
+	&loop
+		LDAk DUP ?{
+			POP POP2
+			#0a18 DEO
+			BRK }
+		#18 DEO
+		INC2 !&loop
+
+@text "Hello 20 "from 20 "our 20 "Uxn! 00
