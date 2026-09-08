@@ -349,8 +349,8 @@ test_faults_and_trace_limit(void)
 	free(c);
 }
 
-static void
-test_assembled_demo(char **paths)
+static Constellation *
+load_assembled_pair(char **paths)
 {
 	Constellation *c = calloc(1, sizeof(*c));
 	uint8_t bytes[1024];
@@ -365,6 +365,13 @@ test_assembled_demo(char **paths)
 		fclose(f);
 		CHECK(constellation_load(c, (ConstellationEndpointId)id, bytes, length));
 	}
+	return c;
+}
+
+static void
+test_assembled_demo(char **paths)
+{
+	Constellation *c = load_assembled_pair(paths);
 	CHECK(constellation_boot(c));
 	CHECK(constellation_step(c));
 	CHECK(constellation_step(c));
@@ -374,6 +381,85 @@ test_assembled_demo(char **paths)
 	CHECK(memcmp(&c->endpoints[1].uxn.ram[0x300], "PING", 4) == 0);
 	CHECK(c->endpoints[0].uxn.ram[0] == 1);
 	free(c);
+}
+
+static Constellation *
+run_assembled_recovery(char **paths)
+{
+	/* Independent oracle for the complete exchange, including idle turns. */
+	static const struct {
+		ConstellationTraceKind kind;
+		ConstellationEndpointId endpoint;
+		uint8_t payload;
+	} expected[] = {
+		{CONSTELLATION_TRACE_BOOT, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_BOOT, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_SEND, CONSTELLATION_A, 1},
+		{CONSTELLATION_TRACE_SEND, CONSTELLATION_A, 2},
+		{CONSTELLATION_TRACE_SEND, CONSTELLATION_A, 3},
+		{CONSTELLATION_TRACE_SEND, CONSTELLATION_A, 4},
+		{CONSTELLATION_TRACE_SEND_FULL, CONSTELLATION_A, 5},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_DELIVER, CONSTELLATION_A, 1},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_WRITABLE, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_SEND, CONSTELLATION_A, 5},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_DELIVER, CONSTELLATION_A, 2},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_IDLE, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_DELIVER, CONSTELLATION_A, 3},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_IDLE, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_DELIVER, CONSTELLATION_A, 4},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_IDLE, CONSTELLATION_A, 0},
+		{CONSTELLATION_TRACE_TURN, CONSTELLATION_B, 0},
+		{CONSTELLATION_TRACE_DELIVER, CONSTELLATION_A, 5}
+	};
+	const uint8_t delivered[] = {1, 2, 3, 4, 5};
+	Constellation *c = load_assembled_pair(paths);
+	unsigned turns = 0;
+	CHECK(constellation_boot(c));
+	while(!constellation_is_quiescent(c) && turns < 16) {
+		CHECK(constellation_step(c));
+		turns++;
+	}
+	CHECK(turns == 9);
+	CHECK(!constellation_has_fault(c));
+	CHECK(constellation_is_quiescent(c));
+	CHECK(c->trace_count == sizeof(expected) / sizeof(expected[0]));
+	for(size_t i = 0; i < c->trace_count; i++) {
+		const ConstellationTraceEvent *e = &c->trace[i];
+		CHECK(e->kind == expected[i].kind);
+		CHECK(e->endpoint == expected[i].endpoint);
+		CHECK(e->reason == CONSTELLATION_FAULT_NONE);
+		CHECK(e->peer == (expected[i].payload ? CONSTELLATION_B :
+			expected[i].endpoint));
+		CHECK(e->message.length == (expected[i].payload ? 1 : 0));
+		CHECK(e->message.data[0] == expected[i].payload);
+	}
+	CHECK(c->endpoints[0].uxn.ram[0] == 6);
+	CHECK(c->endpoints[0].uxn.ram[1] == 1); /* one wake */
+	CHECK(c->endpoints[0].uxn.ram[2] == 1); /* one failed send */
+	CHECK(c->endpoints[0].uxn.ram[3] == 1); /* sender completed */
+	CHECK(c->endpoints[1].uxn.ram[0] == 5);
+	CHECK(memcmp(&c->endpoints[1].uxn.ram[0x400],
+		delivered, sizeof(delivered)) == 0);
+	CHECK(c->endpoints[1].uxn.ram[0x405] == 0);
+	return c;
+}
+
+static void
+test_assembled_recovery(char **paths)
+{
+	Constellation *first = run_assembled_recovery(paths);
+	Constellation *second = run_assembled_recovery(paths);
+	check_same_state(first, second);
+	free(first);
+	free(second);
 }
 
 static void
@@ -477,6 +563,11 @@ test_fault_replays(void)
 int
 main(int argc, char **argv)
 {
+	if(argc != 1 && argc != 3 &&
+		!(argc == 4 && strcmp(argv[1], "--recovery") == 0)) {
+		fprintf(stderr, "usage: test_constellation [A.rom B.rom | --recovery A.rom B.rom]\n");
+		return 1;
+	}
 	test_ping_pong();
 	test_full_queue_fails();
 	test_replay_is_identical();
@@ -486,6 +577,7 @@ main(int argc, char **argv)
 	test_reload_rejected();
 	test_fault_replays();
 	if(argc == 3) test_assembled_demo(argv + 1);
+	if(argc == 4) test_assembled_recovery(argv + 2);
 	printf("%u constellation checks passed\n", tests_run);
 	return 0;
 }

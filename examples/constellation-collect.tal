@@ -1,0 +1,12 @@
+( Collect one byte per callback, without sending replies.
+  Zero page 00 is the count; 0400 onward is the delivery log. )
+|0100
+	;on-receive #d0 DEO2
+	#0300 #d2 DEO2
+	BRK
+
+@on-receive
+	#0300 LDA
+	#00 LDZ #00 SWP #0400 ADD2 STA
+	#00 LDZ INC #00 STZ
+	BRK

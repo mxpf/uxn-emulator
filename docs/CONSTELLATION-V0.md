@@ -109,3 +109,23 @@ correctness assertion; the tests check the demo's receive buffers.
 
 This version deliberately has no files, network, windows, audio, package
 format, general routing table, or permissions system.
+
+## Queue recovery through real ROMs
+
+Run `make constellation-recovery` to assemble and run
+`examples/constellation-burst.tal` and `examples/constellation-collect.tal`.
+The sender attempts bytes 01 through 05 during boot. Its four-slot queue
+accepts the first four and rejects the fifth. The sender reads the failure
+status and yields at BRK, retaining the fifth byte.
+
+The collector receives one message without replying. On the sender's next
+turn, the queue-space vector retries the pending byte. The collector records
+all five bytes in order at 0400; its zero-page counter records five deliveries.
+The sender records one failed send, one wake-up, and completion.
+
+The test loads the assembled ROMs into fresh machines and advances only
+through boot and scheduler calls. It verifies the entire expected 26-event
+trace, exact payload order, ROM-maintained counters, empty queues, and no
+faults. A second fresh run must reproduce the trace and final machine state.
+The same first-build Drifblim download requirement applies as to the greeting
+demo; subsequent builds can run offline.

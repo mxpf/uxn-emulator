@@ -68,6 +68,11 @@ constellation: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/constellatio
 	./$(CONSTELLATION_BIN) build/constellation-ping.rom build/constellation-pong.rom
 	./$(CONSTELLATION_TEST_BIN) build/constellation-ping.rom build/constellation-pong.rom
 
+.PHONY: constellation-recovery
+constellation-recovery: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/constellation-burst.rom build/constellation-collect.rom
+	./$(CONSTELLATION_BIN) build/constellation-burst.rom build/constellation-collect.rom
+	./$(CONSTELLATION_TEST_BIN) --recovery build/constellation-burst.rom build/constellation-collect.rom
+
 check: all test $(PIXEL_ROM)
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./$(EMU_BIN) \
 		--frames 2 --screenshot build/offline-screen.bmp $(PIXEL_ROM)
