@@ -14,15 +14,24 @@ try {
   assert.match(evaluate('document.title'), /Playinghaus/);
   assert.equal(evaluate('document.scripts.length'), 0);
   assert.equal(evaluate('Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)'), true);
-  assert.equal(evaluate('document.querySelector(".cartridge")'), null);
-  assert.deepEqual(evaluate('Array.from(document.querySelectorAll(".box-cover img"), i=>[i.getAttribute("src"),i.naturalWidth,i.naturalHeight])'), [['tiny-neighbors-cover.png',1024,1536]]);
+  assert.equal(evaluate('document.querySelector("nav, footer, .console, .about, .box-cover")'), null);
+  assert.equal(evaluate('getComputedStyle(document.documentElement).backgroundColor'), 'rgb(255, 255, 255)');
+  assert.deepEqual(evaluate('Array.from(document.querySelectorAll(".cartridge-link, .start"), a=>a.getAttribute("href"))'), ['tiny-neighbors/','tiny-neighbors/']);
+  assert.deepEqual(evaluate('Array.from(document.querySelectorAll("img"), i=>[i.getAttribute("src"),i.naturalWidth,i.naturalHeight])'), [['playinghaus-chrome.png',1942,809],['tiny-neighbors-cartridge.png',1122,1402]]);
   for(const width of [320,393,540,768,1440]) {
     call('set','viewport',String(width),'900');
     assert.equal(evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `overflow at ${width}`);
     assert.equal(evaluate('document.querySelector(".start").getBoundingClientRect().height >= 44'),true);
     assert.equal(evaluate('document.querySelector(".game-copy").scrollWidth <= document.querySelector(".game-copy").clientWidth'),true,`clipped title at ${width}`);
-    assert.equal(evaluate('(()=>{const cover=document.querySelector(".box-cover img").getBoundingClientRect(); const screen=document.querySelector(".screen").getBoundingClientRect(); return cover.left>=screen.left && cover.right<=screen.right && Math.abs(cover.height/cover.width-1.5)<0.01;})()'),true,`cropped or distorted cover at ${width}`);
+    assert.equal(evaluate('(()=>{const image=document.querySelector(".cartridge").getBoundingClientRect(); return image.left>=0 && image.right<=innerWidth && Math.abs(image.height/image.width-1402/1122)<0.01;})()'),true,`cropped or distorted cartridge at ${width}`);
+    if(width>=768) assert.equal(evaluate('document.querySelector(".game-copy").getBoundingClientRect().left > document.querySelector(".cartridge").getBoundingClientRect().right'),true,'description should be on the right');
   }
+  call('hover','.cartridge-link');
+  call('wait','300');
+  assert.equal(evaluate('getComputedStyle(document.querySelector(".cartridge")).transform'), 'matrix(1.035, 0, 0, 1.035, 0, 0)');
+  call('set','media','reduced-motion');
+  assert.equal(evaluate('getComputedStyle(document.querySelector(".cartridge")).transform'), 'none');
+  assert.equal(evaluate('getComputedStyle(document.querySelector(".cartridge")).transitionDuration'), '0s');
   call('set','viewport','393','852');
   call('focus','.start');
   call('press','Enter');
@@ -39,12 +48,18 @@ try {
   call('click','.home-link');
   call('wait','--load','networkidle');
   assert.match(evaluate('document.title'),/Playinghaus/);
-  call('click','a[href="#about"]');
-  assert.match(call('get','url'),/#about/);
-  call('click','nav a[href="#library"]');
-  assert.match(call('get','url'),/#library/);
+  call('click','.cartridge-link');
+  call('wait','--load','networkidle');
+  assert.match(call('get','url'), /\/tiny-neighbors\//);
+  assert.equal(evaluate('document.querySelector("#digest").textContent'), '0 4bd10eb037a4d2c2 2b59ad8bac17b3ad');
+  call('click','.home-link');
+  call('wait','--load','networkidle');
+  call('focus','.cartridge-link');
+  call('press','Enter');
+  call('wait','--load','networkidle');
+  assert.match(call('get','url'), /\/tiny-neighbors\//);
   const errors=JSON.parse(call('errors','--json'));
   assert.equal(errors.success,true);
   assert.deepEqual(errors.data.errors,[]);
-  console.log('Playinghaus passed: five widths, static homepage, painted cover art, keyboard launch, game encounter, ROM downloads, return navigation, section links, no browser errors.');
+  console.log('Playinghaus passed: five widths, minimal white page, chrome logo, cartridge art, both launch links, keyboard access, game encounter, ROM downloads, return navigation, no browser errors.');
 } finally { call('close'); }
