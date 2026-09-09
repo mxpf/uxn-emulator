@@ -107,6 +107,8 @@ then serve `build/web/`. See [browser instructions and portability contract](doc
 Try the first Constellation game with `make garden`: a two-ROM garden with a
 wandering creature, a live message panel, and recorded input replay. See
 [Tiny Neighbors](docs/TINY-NEIGHBORS.md) for controls and the protocol.
+Its [measured baseline](docs/GARDEN-BASELINE.md) records cross-host tests,
+resource use, and what the two-ROM prototype does and does not prove.
 
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.

@@ -115,6 +115,15 @@ Script letters are N/E/S/W, G for greet, and a dot for wait.
 proximity and greeting tests. It also compares two 1,000-tick runs for identical
 traces, RAM, device bytes and pixels, checking empty stacks after each tick.
 The SDL host then renders the scripted encounter to `build/garden.bmp`.
+It also records and replays the ten-action greeting through the command-line
+interface, comparing the final state/trace summary and screenshot byte for byte.
+A corrupted final fingerprint must be rejected at the expected tick. These
+checks use temporary files and run as part of `make garden-check`.
+
+The [measured baseline](GARDEN-BASELINE.md) records the expanded scenario suite,
+instruction/message/queue counts, local timings, memory allocation, and limits
+of what this two-ROM example proves. `make garden-measure` prints current
+measurements without adding instrumentation to the shipped game.
 
 ## Browser host
 
@@ -148,9 +157,12 @@ JavaScript converts the shared ARGB pixel buffer to canvas RGBA, handles input,
 and displays message summaries. The ROM binaries are embedded unchanged; the
 standalone downloads are copies of those same files. No game rules live in JS.
 
-`make garden-web-check` compares native and WebAssembly message and canonical
-pixel fingerprints at boot and after 1,010 inputs, then tests terminal faults
-and reset. With the site served and `agent-browser` installed, also run:
+`make garden-web-check` retains the original 1,011 native/WebAssembly message
+and canonical pixel checkpoints, then adds 5,689 checkpoints across nine
+wandering, proximity, collision, clock-wrap and seeded-movement scenarios.
+The new scenarios compare every world snapshot byte as well as fingerprints,
+and test five invalid actions for terminal faults and exact reset.
+With the site served and `agent-browser` installed, also run:
 
 ```sh
 node tests/garden_browser_check.cjs http://127.0.0.1:8765/tiny-neighbors/

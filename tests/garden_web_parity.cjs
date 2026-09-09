@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
 const createGarden = require('../build/web/garden.js');
+const {nativeCases,verifyCases} = require('./garden_scenarios.cjs');
 (async () => {
   const expected = execFileSync('./build/garden_native_digest', {encoding:'utf8'}).trim().split('\n');
   const m = await createGarden();
@@ -19,4 +20,6 @@ const createGarden = require('../build/web/garden.js');
   assert.equal(m._garden_web_reset(), 1);
   assert.equal(digest(), expected[0]);
   console.log('Native/WebAssembly parity: 1,011 matching message + pixel fingerprints; fault/reset passed.');
+  const summaries=await verifyCases(createGarden,nativeCases());
+  console.log(`Extended parity: ${summaries.reduce((n,s)=>n+s.checkpoints,0)} exact world snapshots + message/pixel fingerprints across ${summaries.length} scenarios; five invalid-action/reset cases passed.`);
 })().catch(error => { console.error(error); process.exitCode=1; });

@@ -77,7 +77,7 @@ GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc
 
-.PHONY: garden-web garden-web-check
+.PHONY: garden-web garden-web-check garden-measure
 garden-web: $(GARDEN_ROMS)
 	mkdir -p build/web
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/garden_web.c $(GARDEN_SOURCES) --no-entry \
@@ -93,8 +93,14 @@ garden-web: $(GARDEN_ROMS)
 build/garden_native_digest: tests/garden_native_digest.c src/garden_web.c $(GARDEN_SOURCES) include/garden.h include/constellation.h include/uxn.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/garden_native_digest.c src/garden_web.c $(GARDEN_SOURCES) -o $@
 
-garden-web-check: garden-web build/garden_native_digest
+build/garden_probe: tests/garden_probe.c $(GARDEN_SOURCES) include/garden.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/garden_probe.c $(GARDEN_SOURCES) -o $@
+
+garden-web-check: garden-web build/garden_native_digest build/garden_probe
 	node tests/garden_web_parity.cjs
+
+garden-measure: garden-web build/garden_probe
+	node tests/garden_measure.cjs
 
 build/garden-%.rom: examples/garden-%.tal $(ASSEMBLER_ROM) $(BIN)
 	./$(BIN) $(ASSEMBLER_ROM) $< $@
@@ -113,6 +119,7 @@ build/test_garden: tests/test_garden.c $(GARDEN_SOURCES) include/garden.h includ
 garden-check: bin/garden build/test_garden $(GARDEN_ROMS)
 	./build/test_garden
 	SDL_VIDEODRIVER=dummy ./bin/garden --script EEEEESSSSG --screenshot build/garden.bmp
+	sh tests/garden-replay.sh
 
 check: all test $(PIXEL_ROM)
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./$(EMU_BIN) \
