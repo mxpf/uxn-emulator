@@ -29,6 +29,7 @@ typedef struct {
 	size_t next_incoming, next_writable;
 	uint8_t id, source, writable;
 	bool loaded;
+	bool prefer_receive; /* Prefer the opposite of the last serviced callback. */
 } RoutedNode;
 typedef struct {
 	RoutedRoute route;

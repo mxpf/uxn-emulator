@@ -50,6 +50,7 @@ same_execution(const Fixture *a, const Fixture *b, bool all_memory)
 		CHECK(x->uxn.instructions == y->uxn.instructions);
 		CHECK(x->uxn.working.pointer == 0 && x->uxn.return_stack.pointer == 0);
 		CHECK(x->next_incoming == y->next_incoming && x->next_writable == y->next_writable);
+		CHECK(x->prefer_receive == y->prefer_receive);
 		CHECK(x->source == y->source && x->writable == y->writable && x->loaded == y->loaded);
 	}
 }

@@ -108,11 +108,19 @@ route cannot redirect the notification. Repeated failures coalesce per route.
 Writable notifications also rotate through routes. The ROM owns pending data
 and must retry explicitly; there is no automatic resend or reserved slot.
 
-Writable callbacks take priority over receives, matching v0's policy. This
-does not guarantee application-level progress: a ROM that continually rearms
-notifications can defer its own incoming work. The experiment claims fairness
-among eligible incoming routes, not freedom from every starvation/deadlock
-pattern. Hosts must bound total turns as well as individual evaluations.
+When both callback classes are ready, each node prefers the opposite of its
+last serviced class: a writable callback prefers a receive next, and a receive
+prefers a writable callback next. The initial preference is writable. If only
+one class is ready, it runs immediately regardless of preference; idle turns
+leave the preference unchanged. Only the selected route's cursor advances.
+This intentionally differs from v0's unchanged writable-first policy.
+
+A continuously ready callback class is therefore serviced within two of that
+node's scheduled turns, provided the host remains healthy and evaluations
+return. Routes still rotate independently within each class. This prevents
+self-rearming writable callbacks from starving incoming work, but does not
+guarantee application-level progress or freedom from cyclic backpressure and
+deadlock. Hosts must bound total turns as well as individual evaluations.
 
 ## Faults, inspection, and replay
 
@@ -165,7 +173,8 @@ still gets a terminal error, never overwritten events.
 There are no external inputs in this proof. Replay means a fresh execution of
 the same ROM bytes, declaration order, initial memory, and instruction ceiling.
 The test compares traces, all allocated RAM, stacks, device bytes, instruction
-counts, queues, pending notifications, round-robin cursors, and fault state after
+counts, queues, pending notifications, round-robin cursors, callback-class
+preference, and fault state after
 boot and every turn. Host pointers are deliberately excluded. This is not a
 serialized snapshot or a replay-file format for the routed host.
 
@@ -189,6 +198,17 @@ rejection, and terminal faults. Fault-trace boundary regressions test a retained
 bad selector, a fault using the last trace slot, an omitted fault after a full
 trace, and trace exhaustion preceding another fault attempt. Each is repeated
 in a fresh host with full-state comparison and checked for terminal behavior.
+
+A real-bytecode starvation regression continuously refills an outgoing queue
+and rearms its writable callback while a return message waits. The old
+writable-first scheduler failed the receive-by-turn-7 assertion. With class
+alternation the return message is handled by turn 7, alongside 98 writable
+callbacks and 100 downstream deliveries over 300 turns. A fresh execution
+matches every trace batch and guest/scheduler state after every turn.
+A separate injected-readiness unit test keeps two routes in each class ready
+for 16 node turns, checking class alternation and both route rotations. It also
+checks immediate service when only one class is ready, idle preference
+retention, normal node rotation, and preference reset on initialization.
 
 ## Sustained cooperation
 
@@ -222,7 +242,8 @@ selector, length, and payload, folded with 64-bit FNV-1a. It is not a
 cryptographic proof or a substitute for retaining a trace.
 
 After every turn, the test compares bank-zero RAM, stacks, device bytes,
-instruction counts, queue contents, pending wake-ups, scheduler cursors, fault
+instruction counts, queue contents, pending wake-ups, scheduler cursors,
+callback-class preference, fault
 state, and next trace sequence. All allocated RAM is compared at boot and
 completion. Trace buffers themselves may differ between consumption points;
 their concatenated event streams must not. Every payload and route delivery
@@ -237,6 +258,7 @@ not a real-time latency, throughput, or hours-long soak benchmark.
 This earns a sustained **controlled workload**, not a production console or a
 general progress guarantee. The acknowledgement protocol keeps the relay's
 downstream queue below capacity; only the sender's route 01 repeatedly fills.
-Competing self-rearming writable callbacks, arbitrary cyclic backpressure,
-external input replay, browser parity for this host, packaging, and larger
-workloads still need targeted tests. Game-specific roles remain outside it.
+The separate starvation regression covers a self-rearming writable callback
+competing with receive work; arbitrary cyclic backpressure, external input
+replay, browser parity for this host, packaging, and larger workloads still
+need targeted tests. Game-specific roles remain outside it.

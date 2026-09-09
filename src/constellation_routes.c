@@ -149,11 +149,25 @@ routed_step(RoutedHost *h)
 	h->next_node = (h->next_node + 1) % h->node_count;
 	event(h, CONSTELLATION_TRACE_TURN, n->id, n->id, ROUTED_NONE, NULL);
 	if(h->fault != ROUTED_OK) return false;
+	size_t writable = h->route_count, incoming = h->route_count;
 	/* Independent pending notifications; changing dc cannot redirect a wake-up. */
 	for(size_t offset = 0; offset < h->route_count; offset++) {
 		size_t i = (n->next_writable + offset) % h->route_count;
 		RoutedLink *l = &h->links[i];
 		if(l->route.from != n->id || !l->waiting || l->queue.count == CONSTELLATION_QUEUE_CAPACITY) continue;
+		writable = i; break;
+	}
+	for(size_t offset = 0; offset < h->route_count; offset++) {
+		size_t i = (n->next_incoming + offset) % h->route_count;
+		RoutedLink *l = &h->links[i];
+		if(l->route.to != n->id || !l->queue.count) continue;
+		incoming = i; break;
+	}
+	/* Alternate ready classes; looking ahead must not advance either cursor. */
+	if(writable < h->route_count && (incoming == h->route_count || !n->prefer_receive)) {
+		size_t i = writable;
+		RoutedLink *l = &h->links[i];
+		n->prefer_receive = true;
 		l->waiting = false; n->next_writable = (i + 1) % h->route_count;
 		n->writable = l->route.selector;
 		event(h, CONSTELLATION_TRACE_WRITABLE, n->id, l->route.to, l->route.selector, NULL);
@@ -163,10 +177,10 @@ routed_step(RoutedHost *h)
 		n->writable = ROUTED_NONE;
 		return ok;
 	}
-	for(size_t offset = 0; offset < h->route_count; offset++) {
-		size_t i = (n->next_incoming + offset) % h->route_count;
+	if(incoming < h->route_count) {
+		size_t i = incoming;
 		RoutedLink *l = &h->links[i];
-		if(l->route.to != n->id || !l->queue.count) continue;
+		n->prefer_receive = false;
 		ConstellationMessage message = l->queue.messages[l->queue.head];
 		l->queue.head = (l->queue.head + 1) % CONSTELLATION_QUEUE_CAPACITY; l->queue.count--;
 		n->next_incoming = (i + 1) % h->route_count;

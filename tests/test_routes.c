@@ -13,7 +13,7 @@ static const char *const roms[] = {
 };
 static const RoutedRoute routes[] = {{0, 1, 1}, {0, 2, 2}, {1, 7, 2}};
 
-typedef struct { RoutedHost host; RoutedNode nodes[3]; RoutedLink links[3]; } Fixture;
+typedef struct { RoutedHost host; RoutedNode nodes[3]; RoutedLink links[4]; } Fixture;
 
 static Fixture *
 fresh(void)
@@ -55,6 +55,7 @@ same(const Fixture *a, const Fixture *b)
 		CHECK(memcmp(&x->uxn.return_stack, &y->uxn.return_stack, sizeof(UxnStack)) == 0);
 		CHECK(x->uxn.instructions == y->uxn.instructions);
 		CHECK(x->next_incoming == y->next_incoming && x->next_writable == y->next_writable);
+		CHECK(x->prefer_receive == y->prefer_receive);
 		CHECK(x->source == y->source && x->writable == y->writable && x->loaded == y->loaded);
 	}
 }
@@ -367,12 +368,125 @@ test_fairness_and_payloads(void)
 	}
 }
 
+static void
+test_recovery_does_not_starve_receive(void)
+{
+	Fixture *a = fresh(), *b = fresh();
+	const RoutedRoute graph[] = {{0,1,1}, {1,1,0}, {2,1,0}};
+	uint8_t sender[256] = {0}, receiver[256] = {0}, empty[] = {0};
+	size_t n = deo(sender, 0, 1, 0xd0); n = deo(sender, n, 0x70, 0xd1);
+	n = deo(sender, n, 1, 0xda); n = deo(sender, n, 0x90, 0xdb); n = deo(sender, n, 1, 0xdc);
+	for(unsigned i = 0; i < 5; i++) n = deo(sender, n, 1, 0xd9);
+	const uint8_t counter[] = {0x80,0,0x10,0x01,0x80,0,0x11,0};
+	memcpy(sender + 0x70, counter, sizeof(counter));
+	/* Every writable callback refills until full and rearms itself. */
+	n = deo(sender, 0x90, 1, 0xd9);
+	const uint8_t refill[] = {0x80,0xd9,0x16,0xa0,1,0x90,0x2d,0};
+	memcpy(sender + n, refill, sizeof(refill));
+	n = deo(receiver, 0, 1, 0xd0); n = deo(receiver, n, 0x70, 0xd1); deo(receiver, n, 1, 0xdc);
+	/* The receiver sends one message back on its first delivery. */
+	const uint8_t once[] = {0x80,0,0x10,0xa0,1,0x90,0x2d,0x80,1,0x80,0,0x11};
+	memcpy(receiver + 0x70, once, sizeof(once)); deo(receiver, 0x70 + sizeof(once), 1, 0xd9);
+	Fixture *runs[] = {a, b};
+	for(unsigned i = 0; i < 2; i++) {
+		Fixture *f = runs[i];
+		CHECK(routed_init(&f->host, f->nodes, 3, f->links, graph, 3, 10000));
+		CHECK(routed_load(&f->host, 0, sender, sizeof(sender)));
+		CHECK(routed_load(&f->host, 1, receiver, sizeof(receiver)));
+		CHECK(routed_load(&f->host, 2, empty, sizeof(empty)));
+		CHECK(routed_boot(&f->host));
+	}
+	same(a, b);
+	RoutedEvent events[128], replay[128]; size_t count, replay_count;
+	unsigned wakes = 0, deliveries = 0;
+	for(unsigned turn = 1; turn <= 300; turn++) {
+		CHECK(routed_step(&a->host)); CHECK(routed_step(&b->host)); same(a, b);
+		CHECK(routed_take_trace(&a->host, events, 128, &count));
+		CHECK(routed_take_trace(&b->host, replay, 128, &replay_count));
+		CHECK(count == replay_count && memcmp(events, replay, count * sizeof(*events)) == 0);
+		for(size_t i = 0; i < count; i++) {
+			wakes += events[i].kind == CONSTELLATION_TRACE_WRITABLE && events[i].from == 0;
+			deliveries += events[i].kind == CONSTELLATION_TRACE_DELIVER && events[i].to == 1;
+		}
+		if(turn == 7) CHECK(a->nodes[0].uxn.ram[0] == 1 && a->links[1].queue.count == 0);
+	}
+	CHECK(wakes >= 90 && deliveries == 100);
+	CHECK(a->nodes[0].uxn.ram[0] == 1 && a->links[1].queue.count == 0);
+	CHECK(a->host.fault == ROUTED_OK && !routed_quiescent(&a->host));
+	printf("Fair dispatch: incoming message handled by turn 7; %u recovery callbacks and %u downstream deliveries across 300 turns, replay identical.\n", wakes, deliveries);
+	free(a); free(b);
+}
+
+static void
+test_callback_class_and_route_fairness(void)
+{
+	Fixture *f = fresh();
+	const RoutedRoute graph[] = {{0,1,1}, {0,2,2}, {1,7,0}, {2,8,0}};
+	uint8_t rom[128] = {0};
+	size_t n = deo(rom, 0, 1, 0xd0); n = deo(rom, n, 0x70, 0xd1);
+	n = deo(rom, n, 1, 0xda); deo(rom, n, 0x70, 0xdb);
+	CHECK(routed_init(&f->host, f->nodes, 3, f->links, graph, 4, 10000));
+	for(unsigned i = 0; i < 3; i++) CHECK(routed_load(&f->host, i, rom, sizeof(rom)));
+	CHECK(routed_boot(&f->host));
+	CHECK(!f->nodes[0].prefer_receive);
+	RoutedEvent events[128]; size_t count;
+	CHECK(routed_take_trace(&f->host, events, 128, &count));
+	/* Inject readiness to isolate scheduler policy from guest protocol choices.
+	 * Sixteen mixed turns, then receive-only, writable-only twice, idle,
+	 * receive-only: unavailable preferred classes must never waste a turn. */
+	for(unsigned turn = 0; turn < 21; turn++) {
+		bool outgoing = turn < 16 || turn == 17 || turn == 18;
+		bool incoming = turn < 16 || turn == 16 || turn == 20;
+		for(unsigned i = 0; i < 4; i++) {
+			memset(&f->links[i].queue, 0, sizeof(f->links[i].queue));
+			f->links[i].waiting = outgoing && i < 2;
+			f->links[i].queue.count = incoming && i >= 2;
+		}
+		RoutedNode *node = &f->nodes[0];
+		size_t old_incoming = node->next_incoming, old_writable = node->next_writable;
+		bool old_preference = node->prefer_receive;
+		CHECK(f->host.next_node == 0);
+		CHECK(routed_step(&f->host));
+		CHECK(routed_take_trace(&f->host, events, 128, &count));
+		CHECK(count == 2 && events[0].kind == CONSTELLATION_TRACE_TURN && events[0].from == 0);
+		if(turn == 19) {
+			CHECK(events[1].kind == CONSTELLATION_TRACE_IDLE);
+			CHECK(node->prefer_receive == old_preference);
+			CHECK(node->next_incoming == old_incoming && node->next_writable == old_writable);
+		} else if((turn < 16 && turn % 2 == 0) || turn == 17 || turn == 18) {
+			unsigned route = turn < 16 ? (turn / 2) % 2 : turn - 17;
+			CHECK(events[1].kind == CONSTELLATION_TRACE_WRITABLE && events[1].selector == route + 1);
+			CHECK(node->prefer_receive && node->next_incoming == old_incoming);
+			CHECK(node->next_writable == route + 1 && !f->links[route].waiting);
+			CHECK(f->links[1 - route].waiting);
+			CHECK(f->links[2].queue.count == incoming && f->links[3].queue.count == incoming);
+		} else {
+			unsigned route = turn < 16 ? 2 + (turn / 2) % 2 : (turn == 16 ? 2 : 3);
+			CHECK(events[1].kind == CONSTELLATION_TRACE_DELIVER && events[1].from == route - 1);
+			CHECK(!node->prefer_receive && node->next_writable == old_writable);
+			CHECK(node->next_incoming == (route + 1) % 4 && f->links[route].queue.count == 0);
+			CHECK(f->links[5 - route].queue.count == 1);
+			CHECK(f->links[0].waiting == outgoing && f->links[1].waiting == outgoing);
+		}
+		/* The other nodes still receive exactly their normal scheduled turns. */
+		CHECK(routed_step(&f->host)); CHECK(routed_step(&f->host));
+		CHECK(routed_take_trace(&f->host, events, 128, &count));
+		CHECK(count == 4 && events[0].from == 1 && events[2].from == 2);
+	}
+	f->nodes[0].prefer_receive = true;
+	CHECK(routed_init(&f->host, f->nodes, 3, f->links, graph, 4, 10000));
+	CHECK(!f->nodes[0].prefer_receive);
+	free(f);
+}
+
 int main(void)
 {
 	test_three_roms(); test_faults_and_lifecycle();
 	test_fault_trace_boundaries();
 	test_trace_batches();
 	test_rewire_and_single_node(); test_fairness_and_payloads(); test_multiple_wakeups();
+	test_recovery_does_not_starve_receive();
+	test_callback_class_and_route_fairness();
 	printf("%u routed-host checks passed\n", checks);
 	return 0;
 }
