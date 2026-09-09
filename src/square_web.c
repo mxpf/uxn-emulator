@@ -14,6 +14,12 @@ EXPORT int no_escape_input(int action)
 {
 	return action >= 1 && action <= 4 && square_input(&session, (uint8_t)action);
 }
+/* Read-only browser admission check; queue bounds and raw input stay unchanged. */
+EXPORT int no_escape_input_ready(void)
+{
+	return session.live && !session.play && !session.sealed && !session.failed &&
+		session.live->links[0].queue.count < CONSTELLATION_QUEUE_CAPACITY;
+}
 EXPORT int no_escape_step(void)
 {
 	return session.play ? square_replay_step(&session) : square_step(&session);

@@ -150,6 +150,7 @@ build/square_native_digest: tests/square_native_digest.c src/square_web.c $(SQUA
 .PHONY: square-web-check
 square-web-check: square-web build/square_native_digest
 	node tests/square_web_parity.cjs
+	node tests/square_controls.cjs
 
 .PHONY: garden-web garden-web-check garden-measure
 garden-web: $(GARDEN_ROMS)

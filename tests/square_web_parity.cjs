@@ -18,7 +18,7 @@ const create = require('../build/web/no-escape/no-escape.js');
       while(!(machine._no_escape_flags() & 4) && ok && limit++ <= 8193) ok = machine._no_escape_step();
       ok = ok && (machine._no_escape_flags() & 4);
     } else if(op === 'x') ok = machine._no_escape_input(256);
-    const actual = `${Number(!!ok)} ${machine.UTF8ToString(machine._no_escape_digest())}`;
+    const actual = `${Number(!!ok)} ${machine._no_escape_input_ready()} ${machine.UTF8ToString(machine._no_escape_digest())}`;
     assert.equal(actual, expected[i], `operation ${i} (${op})`);
   }
   assert.equal(expected.length, operations.length);

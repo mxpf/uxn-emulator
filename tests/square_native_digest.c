@@ -15,7 +15,7 @@ int main(void)
 			ok = ok && (no_escape_flags() & 4);
 		} else if(op == 'x') ok = no_escape_input(256);
 		else return 1;
-		printf("%d %s\n", !!ok, no_escape_digest());
+		printf("%d %d %s\n", !!ok, no_escape_input_ready(), no_escape_digest());
 	}
 	square_free(&session); return 0;
 }

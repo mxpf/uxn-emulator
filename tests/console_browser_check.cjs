@@ -48,13 +48,16 @@ try {
     call('mouse','up');call('wait','120');
     assert.equal(evaluate('getComputedStyle(document.querySelector(".right")).transform'),'none');
     if(route==='no-escape/') {
-      // Start and pause in one UI operation, avoiding a long wall-clock recording.
+      // Pause must freeze movement, including arrow keys, until resumed.
       evaluate('document.querySelector("#reset").click();document.querySelector("#pause").click()');
       assert.deepEqual(position(),[8,6,64]);
-      call('click','[data-action="2"]');assert.deepEqual(position(),[9,6,64]);
-      call('click','[data-action="1"]');assert.deepEqual(position(),[9,5,64]);
-      call('focus','canvas');call('press','ArrowLeft');assert.deepEqual(position(),[8,5,64]);
-      call('press','ArrowDown');assert.deepEqual(position(),[8,6,64]);
+      assert.equal(evaluate('document.querySelector(".right").disabled'),true);
+      call('focus','canvas');call('press','ArrowRight');call('wait','150');assert.deepEqual(position(),[8,6,64]);
+      call('click','#pause');
+      call('click','[data-action="2"]');call('wait','100');assert.deepEqual(position(),[9,6,64]);
+      call('click','[data-action="1"]');call('wait','100');assert.deepEqual(position(),[9,5,64]);
+      call('focus','canvas');call('press','ArrowLeft');call('wait','100');assert.deepEqual(position(),[8,5,64]);
+      call('press','ArrowDown');call('wait','100');assert.deepEqual(position(),[8,6,64]);
       call('click','#replay');call('wait','--fn','document.querySelector("#status").textContent.includes("Replay verified")');
       assert.deepEqual(position(),[8,6,64]);
       assert.equal(evaluate('document.querySelector(".right").disabled'),true);
@@ -63,14 +66,30 @@ try {
       assert.equal(evaluate('document.querySelector("#pause").textContent'),'Resume');
       const paused=position();call('wait','100');assert.deepEqual(position(),paused);
       call('set','viewport','1440','1000');call('focus','canvas');call('press','ArrowRight');
+      assert.deepEqual(position(),[8,6,64]);
+      call('press','p');call('press','ArrowRight');call('wait','100');
       assert.deepEqual(position(),[9,6,64]);
       call('press','r');call('wait','--fn','document.querySelector("#status").textContent.includes("Replay verified")');
       call('press','n');assert.equal(evaluate('document.querySelector("#replay").disabled'),false);
+      // Real page handlers under a same-frame burst and blocked main thread.
+      evaluate(`(() => {
+        document.querySelector('#reset').click();
+        for(let i=0;i<60;i++) document.querySelector('[data-action="'+[2,1,4,3][i%4]+'"]').click();
+        const board=document.querySelector('canvas');
+        board.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+        for(let i=0;i<500;i++) board.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',repeat:true,bubbles:true}));
+        const end=performance.now()+300;while(performance.now()<end) {}
+        board.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowRight',bubbles:true}));
+      })()`);
+      call('wait','300');assert.deepEqual(position(),[9,6,64]);
+      assert.doesNotMatch(evaluate('document.querySelector("#status").textContent'),/rejected/);
+      call('click','#replay');call('wait','--fn','document.querySelector("#status").textContent.includes("Replay verified")');
+      assert.deepEqual(position(),[9,6,64]);
     }
     assert.equal(evaluate('document.querySelector("#error").hidden'),true);
     call('click','.back');assert.equal(evaluate('location.pathname'),new URL(root).pathname);
   }
   const errors=JSON.parse(call('errors','--json'));
   assert.equal(errors.success,true);assert.deepEqual(errors.data.errors,[]);
-  console.log('Both console interfaces passed: four widths, flush full-width 4:3 screen, mobile/desktop controls, bottom back navigation, 44px targets, real press/release depression; No Escape! touch/keyboard movement, exact canvas pixels, replay, reset, blur/pause; no page errors.');
+  console.log('Both console interfaces passed: four widths, flush full-width 4:3 screen, mobile/desktop controls, bottom back navigation, 44px targets, real press/release depression; No Escape! touch/keyboard movement, exact canvas pixels, replay, reset, blur/pause, same-frame bursts and delayed frames without rejected moves; no page errors.');
 } finally {call('close');}

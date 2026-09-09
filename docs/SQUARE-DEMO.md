@@ -99,7 +99,22 @@ No game rules or new platform roles are introduced.
 
 Arrow keys or the mobile directional buttons move. `P` pauses/resumes,
 `R` replays, and `N` starts a new game. Each touch button submits one action
-per tap. Paused movement advances three scheduler turns immediately. Blur or
+per tap. Keyboard holds use a 250 ms initial delay and at most ten repeats
+per second; OS key-repeat events are ignored. A delayed frame produces at
+most one repeat, never a catch-up burst. The most recently pressed held
+direction wins. Releasing it resumes any previous held direction.
+
+The browser checks external queue capacity before submitting a discrete
+press. If full, it advances at most one three-turn scheduler round for this
+demo's three-node pipeline, then submits once. This preserves individual taps
+without an unbounded JavaScript queue, raw rejection/retry, or any change to
+the routed core's four-slot limit. These extra logical turns are recorded
+normally. An unexpectedly still-full queue stops visibly rather than dropping
+the move. Recording limits still freeze play explicitly.
+
+Pause freezes both scheduler turns and movement input; directional controls
+are disabled until Resume. Held state clears
+on pause, blur, reset, replay and recording completion. Blur or
 switching tabs pauses; resuming never catches up elapsed wall time. Capture
 starts automatically and includes idle turns. Recordings are bounded and
 in-memory only; leaving the page discards them. Replay disables live movement
@@ -128,3 +143,11 @@ aspect ratio, overflow, touch-target sizes, bottom navigation, and actual
 button press/release depth. No Escape! checks cover touch and keyboard
 movement, rendered square pixels, replay, reset, and blur/pause. These are
 browser-engine/responsive checks, not physical-device Safari testing.
+
+`make square-web-check` also runs the real JavaScript controls against the
+real WebAssembly module with controlled event/frame timing. It exercises 60
+same-frame taps, 500 OS repeat events, two-second frame stalls, held-direction
+changes, exact-state pause during play and replay, reset, and recording-limit
+completion. Every scenario must avoid rejected inputs and replay exactly.
+The on-page browser suite repeats burst/repeat input with a blocked main
+thread, checks the actual final canvas position, and verifies replay.
