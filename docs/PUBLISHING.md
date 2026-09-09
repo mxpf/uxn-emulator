@@ -2,13 +2,14 @@
 
 The site is static GitHub Pages hosting for `mxpf/uxn-emulator`, served from
 the root of the `gh-pages` branch. The homepage lives at `/`, with games at
-`/tiny-neighbors/` and `/no-escape/`. Only generated browser assets belong there;
+`/tiny-neighbors/` and `/no-escape/`, and Sketchpad at `/sketchpad/`.
+Only generated browser assets belong there;
 the editable source stays on `constellation-game`.
 
 Before publishing an update, activate Emscripten 4.0.15 and run:
 
 ```sh
-make garden-check square-check playing-web garden-web-check square-web-check
+make runner-check garden-check square-check sketch-check playing-web garden-web-check square-web-check sketch-web-check
 ```
 
 Serve `build/web/` locally and run the browser checks described in
@@ -18,6 +19,7 @@ Also run the shared interface and homepage checks:
 ```sh
 node tests/console_browser_check.cjs http://127.0.0.1:8766/
 node tests/playinghaus_browser_check.cjs http://127.0.0.1:8766/
+node tests/sketch_browser_check.cjs http://127.0.0.1:8766/sketchpad/
 ```
 
 Commit the source, then copy the
@@ -26,7 +28,8 @@ contents of `build/web/` into a clean checkout of `gh-pages`, preserving its
 `gh-pages`. Do not force-push or publish source files, local recordings, or tests.
 Use a fresh build directory when packaging, so obsolete generated files do not
 leak into the release. `square-web` alone builds the new game, but `playing-web`
-builds the complete site and both games.
+builds the complete site, both games and Sketchpad. Keep the test-only
+`build/sketch-check/` and `build/runner-web/` directories out of the artifact.
 
 Porkbun manages the domain. The intended DNS configuration is:
 

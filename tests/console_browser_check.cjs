@@ -42,10 +42,12 @@ try {
     }
     call('set','viewport','390','844');
     const center=evaluate(`(() => {const b=document.querySelector('[data-action="2"]').getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2];})()`);
-    call('mouse','move',...center.map(n=>String(Math.round(n))));call('mouse','down');call('wait','120');
+    call('mouse','move',...center.map(n=>String(Math.round(n))));call('mouse','down');
+    call('wait','--fn','getComputedStyle(document.querySelector(".right")).transform === "matrix(1, 0, 0, 1, 0, 5)"');
     assert.equal(evaluate('getComputedStyle(document.querySelector(".right")).transform'),'matrix(1, 0, 0, 1, 0, 5)');
     call('screenshot',`build/${route.slice(0,-1)}-pressed.png`);
-    call('mouse','up');call('wait','120');
+    call('mouse','up');
+    call('wait','--fn','getComputedStyle(document.querySelector(".right")).transform === "none"');
     assert.equal(evaluate('getComputedStyle(document.querySelector(".right")).transform'),'none');
     if(route==='no-escape/') {
       // Pause must freeze movement, including arrow keys, until resumed.

@@ -1,0 +1,30 @@
+( Sketchpad-local protocol: external selector 07; 1 up, 2 right, 3 down,
+  4 left, 5 toggle draw, 6 toggle erase. ZP 00/01 cursor, 02 mode:
+  0 move, 1 draw, 2 erase. 1000-12ff paper, 32 x 24.
+  Display: 40-41 paper address, 42/43 cursor, 44 commit, 45 mode. )
+|0100
+	;receive #d0 DEO2 #0300 #d2 DEO2
+	#1000 #40 DEO2 #10 #00 STZ #0c #01 STZ !publish
+@receive
+	#dd DEI #ff NEQ ?done
+	#d4 DEI #01 NEQ ?done
+	#0300 LDA #01 EQU ?north
+	#0300 LDA #02 EQU ?east
+	#0300 LDA #03 EQU ?south
+	#0300 LDA #04 EQU ?west
+	#0300 LDA #05 EQU ?draw
+	#0300 LDA #06 EQU ?erase
+	BRK
+@north #01 LDZ #00 EQU ?mark #01 LDZ #01 SUB #01 STZ !mark
+@east #00 LDZ #1f EQU ?mark #00 LDZ INC #00 STZ !mark
+@south #01 LDZ #17 EQU ?mark #01 LDZ INC #01 STZ !mark
+@west #00 LDZ #00 EQU ?mark #00 LDZ #01 SUB #00 STZ !mark
+@draw #02 LDZ #01 EQU ?off #01 #02 STZ !mark
+@erase #02 LDZ #02 EQU ?off #02 #02 STZ !mark
+@off #00 #02 STZ !publish
+@mark
+	#02 LDZ #00 EQU ?publish
+	#02 LDZ #01 EQU ;cell JSR2 STA
+@publish #00 LDZ #42 DEO #01 LDZ #43 DEO #02 LDZ #45 DEO #01 #44 DEO
+@done BRK
+@cell #00 #01 LDZ #50 SFT2 #00 #00 LDZ ADD2 #1000 ADD2 JMP2r

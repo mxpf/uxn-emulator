@@ -155,6 +155,48 @@ square-check: bin/square build/test_square build/test_square_ui build/test_squar
 	SDL_VIDEODRIVER=dummy ./bin/square --script NNEE.SW --verify-replay --screenshot build/square.bmp
 
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
+SKETCH_SOURCES := src/sketchpad.c $(RUNNER_SOURCES)
+SKETCH_HEADERS := include/sketchpad.h include/constellation_runner.h include/constellation_routes.h include/constellation.h include/uxn.h
+
+build/sketchpad.rom: examples/sketchpad.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+
+bin/sketchpad: src/sketch_sdl.c $(SKETCH_SOURCES) $(SKETCH_HEADERS) | bin
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/sketch_sdl.c $(SKETCH_SOURCES) $(SDL_LIBS) -o $@
+
+build/test_sketch: tests/test_sketch.c $(SKETCH_SOURCES) $(SKETCH_HEADERS) | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_sketch.c $(SKETCH_SOURCES) -o $@
+
+build/sketch_probe: tests/sketch_probe.c tests/sketch_fingerprint.h src/sketch_web.c $(SKETCH_SOURCES) $(SKETCH_HEADERS) | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/sketch_probe.c $(SKETCH_SOURCES) -o $@
+
+.PHONY: sketchpad sketch-web sketch-check sketch-web-check
+sketchpad: bin/sketchpad build/sketchpad.rom
+	./bin/sketchpad
+
+sketch-check: build/test_sketch bin/sketchpad build/sketchpad.rom
+	./build/test_sketch
+	SDL_VIDEODRIVER=dummy ./bin/sketchpad --script 525364
+
+# Build the same application at its public relative path.
+sketch-web: build/sketchpad.rom
+	mkdir -p build/web/sketchpad
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/sketch_web.c $(SKETCH_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createSketch -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/sketchpad.rom -o build/web/sketchpad/sketch.js
+	cp web/sketchpad/index.html web/sketchpad/style.css web/sketchpad/app.js build/web/sketchpad/
+
+sketch-web-check: sketch-web build/sketch_probe
+	mkdir -p build/sketch-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/sketch_probe.c $(SKETCH_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createSketch -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/sketchpad.rom -o build/sketch-check/sketch.js
+	node tests/sketch_web_parity.cjs
+
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc
 
@@ -170,7 +212,7 @@ square-web: $(SQUARE_ROMS)
 	cp web/no-escape/index.html web/no-escape/app.js build/web/no-escape/
 	cp web/style.css build/web/
 
-playing-web: garden-web square-web
+playing-web: garden-web square-web sketch-web
 
 build/square_native_digest: tests/square_native_digest.c src/square_web.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/square_native_digest.c $(SQUARE_SOURCES) -o $@
@@ -188,7 +230,7 @@ garden-web: $(GARDEN_ROMS)
 		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
 		--embed-file build/garden-view.rom --embed-file build/garden-world.rom \
 		-o build/web/garden.js
-	cp web/index.html web/home.css web/tiny-neighbors-cartridge.png web/no-escape-cartridge.png web/playinghaus-chrome.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
+	cp web/index.html web/home.css web/tiny-neighbors-cartridge.png web/no-escape-cartridge.png web/sketchpad-cartridge.png web/playinghaus-chrome.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
 	mkdir -p build/web/tiny-neighbors
 	cp web/tiny-neighbors/index.html build/web/tiny-neighbors/
 	cp web/.nojekyll build/web/

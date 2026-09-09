@@ -63,6 +63,10 @@ arrow mapping, frame pacing and admission policy remain demo-specific.
 Its drawing callback now receives its own explicit context instead of
 recovering the containing machine through a host-pointer layout assumption.
 
+[Sketchpad](SKETCHPAD.md) independently uses the same runner with one ROM,
+one external input route and its own paper-snapshot display attachment. The
+runner does not acquire drawing commands or game roles to support it.
+
 The runner does not read files or fetch URLs. Native and embedded-Wasm file
 loading remain at the application boundary. There is no cartridge file
 format, runtime ROM picker, universal recorder, standard screen contract,

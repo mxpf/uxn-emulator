@@ -128,6 +128,12 @@ instruction ceiling, without prescribed game roles. `make runner-check`
 checks branching/reordered applications and startup failures;
 `make runner-web-check` repeats the behavior/diagnostic suite in WebAssembly.
 
+[Sketchpad](docs/SKETCHPAD.md) is a second, non-game application: one ROM owns
+a small sheet of pixels, using its own attached display and input mapping.
+`make sketchpad` runs it natively; `make playing-web` includes it as the third
+cartridge, at `/sketchpad/`. `make sketch-check` and `make sketch-web-check` verify its
+drawing model and native/browser determinism without changing the runner.
+
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
