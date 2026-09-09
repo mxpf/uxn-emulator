@@ -259,6 +259,60 @@ This earns a sustained **controlled workload**, not a production console or a
 general progress guarantee. The acknowledgement protocol keeps the relay's
 downstream queue below capacity; only the sender's route 01 repeatedly fills.
 The separate starvation regression covers a self-rearming writable callback
-competing with receive work; arbitrary cyclic backpressure, external input
-replay, browser parity for this host, packaging, and larger workloads still
-need targeted tests. Game-specific roles remain outside it.
+competing with receive work. The ring fixture below adds controlled cyclic
+pressure. Arbitrary application deadlocks, external input replay, browser
+parity for this host, packaging, and larger workloads still need targeted
+tests. Game-specific roles remain outside it.
+
+## Cyclic queue pressure
+
+Run `make constellation-ring`. Three copies of the same 269-byte ordinary Uxn
+ROM form a directed ring, tested in both directions without changing the ROM.
+The harness seeds each machine's private memory with an origin ID and a hop
+limit; these are fixture inputs, not new host devices or required node roles.
+
+Each machine starts five identifiable tokens. After boot, **all three host
+queues are full simultaneously**, all three senders have a pending writable
+notification, and each ROM retains its fifth token. A receive forwards the
+token with one fewer remaining hop, or retires it at the last hop. Both receive
+and writable callbacks attempt to flush the ROM's private FIFO; a rejected
+send leaves the token there for a later attempt.
+
+The guest FIFO has sixteen fixed slots. There are only fifteen tokens in the
+entire workload, so even a machine temporarily holding every token has enough
+private space. This is a deliberate guest protocol choice, not automatic host
+buffering, dynamic queue growth, or proof that smaller application buffers
+cannot deadlock. No host code changes were needed for this experiment.
+
+Eight cases cover hop limits 1, 3, 12, and 64 in each direction. The local
+2026-09-09 run measured the following for the two 64-hop cases:
+
+| Evidence | Forward ring | Reverse ring |
+| --- | ---: | ---: |
+| Scheduler turns | 1,593 | 1,908 |
+| Exact trace events | 5,415 | 6,359 |
+| Deliveries per route | 320 / 320 / 320 | 320 / 320 / 320 |
+| Rejected full sends per route | 527 / 528 / 211 | 632 / 316 / 632 |
+| Writable callbacks per route | 211 / 211 / 211 | 316 / 316 / 316 |
+| Peak private pending tokens, at callback boundaries | 2 / 3 / 1 | 2 / 1 / 2 |
+| Largest delivery gap per route, including startup | 6 / 6 / 6 turns | 6 / 6 / 6 turns |
+
+An independent token ledger checks every send and delivery against identity,
+location, remaining hops, and route FIFO order. After boot and every turn it
+also checks that every token exists exactly once in a host queue, a guest FIFO,
+or the retired set, and reconciles guest receive/retry/retirement counters.
+All cases must retire all fifteen tokens, empty both host and guest queues,
+clear pending notifications, and finish without faults or trace truncation.
+Turn limits and progress assertions turn a stall into a test failure.
+
+A fresh replay consumes its trace every seven turns while the first execution
+consumes every turn; the concatenated events must match byte for byte. Guest
+bank-zero memory, stacks, devices, instruction counts, queues, scheduling
+cursors, and callback preference match after every turn. All allocated guest
+memory matches at boot and completion. The ring suite also passes
+AddressSanitizer and UndefinedBehaviorSanitizer.
+
+This demonstrates lossless completion under repeated cyclic queue pressure
+for a finite, explicitly buffered protocol. It does not establish a general
+deadlock-free messaging system, an unbounded streaming protocol, or real-time
+performance guarantees.

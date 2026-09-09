@@ -1,0 +1,60 @@
+( Identical bounded relay on every node. Harness seeds ZP 00 identity, 01 hops.
+  Five tokens per node, fifteen globally; a sixteen-slot private FIFO can hold
+  the entire workload. Each token is origin, serial, remaining deliveries.
+  ZP 02 head, 03 tail, 04 count, 05 seed serial, 06-07 retired,
+  08-09 received, 0a-0b writable, 0c-0d full, 0e overflow, 10-11 scratch.
+  Receive buffer 0700; private FIFO 0800, four-byte slots, three-byte payloads. )
+|0100
+	;on-receive #d0 DEO2
+	#0700 #d2 DEO2
+	;on-writable #da DEO2
+	#03 #d8 DEO
+	#01 #dc DEO
+@seed
+	#00 LDZ #0700 STA
+	#05 LDZ #0701 STA
+	#01 LDZ #0702 STA
+	;enqueue JSR2
+	#05 LDZ INC DUP #05 STZ #05 NEQ ?seed
+	!flush
+
+@on-receive
+	#08 LDZ2 INC2 #08 STZ2
+	#0702 LDA #01 EQU ?retire
+	#0702 LDA #01 SUB #0702 STA
+	;enqueue JSR2
+	!flush
+@retire
+	#06 LDZ2 INC2 #06 STZ2
+	!flush
+
+@on-writable
+	#0a LDZ2 INC2 #0a STZ2
+	!flush
+
+@enqueue
+	#04 LDZ #10 EQU ?overflow
+	#03 LDZ #00 SWP #20 SFT2 #0800 ADD2 #10 STZ2
+	#0700 LDA #10 LDZ2 STA
+	#0701 LDA #10 LDZ2 INC2 STA
+	#0702 LDA #10 LDZ2 #0002 ADD2 STA
+	#03 LDZ INC #0f AND #03 STZ
+	#04 LDZ INC #04 STZ
+	JMP2r
+@overflow
+	#01 #0e STZ
+	BRK
+
+@flush
+	#04 LDZ #00 EQU ?done
+	#02 LDZ #00 SWP #20 SFT2 #0800 ADD2 #d6 DEO2
+	#01 #d9 DEO
+	#d9 DEI ?accepted
+	#0c LDZ2 INC2 #0c STZ2
+	BRK
+@accepted
+	#02 LDZ INC #0f AND #02 STZ
+	#04 LDZ #01 SUB #04 STZ
+	!flush
+@done
+	BRK
