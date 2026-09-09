@@ -146,7 +146,7 @@ ROM loading. The native CLI remains available for recording/replay.
 
 The browser starts paused. Play runs four ticks per second; direction keys can
 be held. Touch buttons submit one action per tap. While paused, directions and
-greeting execute one turn immediately; Step/N executes a wait turn. Reset boots
+greeting execute one turn immediately; N executes a wait turn. Reset boots
 both ROMs again and clears history. Leaving the tab/window pauses and clears
 held/pending input; resuming never catches up elapsed time. Faults stop execution
 and leave the garden and error visible until reset.
@@ -154,7 +154,8 @@ and leave the garden and error visible until reset.
 The browser compiles **the same** `uxn.c`, `constellation.c`, and `garden.c`.
 `garden_web.c` only exposes reset, bounded step, pixels, snapshot and diagnostics.
 JavaScript converts the shared ARGB pixel buffer to canvas RGBA, handles input,
-and displays message summaries. The ROM binaries are embedded unchanged; the
+and publishes a diagnostic fingerprint on the canvas data attribute without
+a visible message inspector. The ROM binaries are embedded unchanged; the
 standalone downloads are copies of those same files. No game rules live in JS.
 
 `make garden-web-check` retains the original 1,011 native/WebAssembly message
@@ -167,11 +168,19 @@ With the site served and `agent-browser` installed, also run:
 ```sh
 node tests/garden_browser_check.cjs http://127.0.0.1:8765/tiny-neighbors/
 node tests/playinghaus_browser_check.cjs http://127.0.0.1:8765/
+node tests/console_browser_check.cjs http://127.0.0.1:8765/
 ```
 
 This repeats parity in a browser engine and checks canvas output, the keyboard
 greeting path, button input, play, blur/pause, reset and narrow-screen overflow.
 These are diagnostic hashes, not exhaustive proof for every possible input.
+
+The public game uses the shared Constellation-inspired console surface: a
+full-width 4:3 screen flush with the top of the page, tactile mobile controls
+centered below, desktop keyboard instructions, and a bottom back link.
+Tiny Neighbors retains its separate gold Hello button on mobile. Diagnostics,
+explanatory articles and download links are omitted from this play interface;
+the standalone ROM assets remain available at their existing URLs.
 
 ### Portability rule for future ROMs
 

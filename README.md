@@ -117,6 +117,11 @@ It does not replace v0 or impose game-specific roles.
 `make constellation-sustained` checks 1,024 acknowledged cycles, repeated queue
 recovery, and exact replay with different bounded trace-consumption intervals.
 
+Try `make square` for a minimal interactive demo on that routed host: arrow
+keys move a square through three ROMs, `R` replays the recorded session, and
+`N` starts over. See [Square demo](docs/SQUARE-DEMO.md); `make square-check`
+checks movement, pixels, window controls, and exact replay.
+
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.

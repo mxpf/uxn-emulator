@@ -1,0 +1,14 @@
+( Demo choice: validate an external arrow action and forward it on route 01.
+  This fixed pipeline has at most one new action per node turn. )
+|0100
+	;receive #d0 DEO2 #0300 #d2 DEO2
+	#0300 #d6 DEO2 #01 #d8 DEO #01 #dc DEO
+	BRK
+@receive
+	#dd DEI #ff NEQ ?done
+	#d4 DEI #01 NEQ ?done
+	#0300 LDA #01 LTH ?done
+	#0300 LDA #04 GTH ?done
+	#01 #d9 DEO #d9 DEI ?done
+	#01 #00 STZ ( Flag an unexpected full downstream route. )
+@done BRK

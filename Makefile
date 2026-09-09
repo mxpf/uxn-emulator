@@ -105,9 +105,51 @@ build/test_routes_input: tests/test_routes_input.c src/constellation_routes.c sr
 constellation-input: build/test_routes_input build/routes-input.rom
 	./build/test_routes_input
 
+SQUARE_SOURCES := src/square_demo.c src/constellation_routes.c src/uxn.c
+SQUARE_ROMS := build/routes-square-input.rom build/routes-square-world.rom build/routes-square-draw.rom
+
+bin/square: src/square_sdl.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | bin
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/square_sdl.c $(SQUARE_SOURCES) $(SDL_LIBS) -o $@
+
+build/test_square: tests/test_square.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_square.c $(SQUARE_SOURCES) -o $@
+
+build/test_square_ui: tests/test_square_ui.c src/square_sdl.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) tests/test_square_ui.c $(SQUARE_SOURCES) $(SDL_LIBS) -o $@
+
+.PHONY: square square-check
+square: bin/square $(SQUARE_ROMS)
+	./bin/square
+
+square-check: bin/square build/test_square build/test_square_ui $(SQUARE_ROMS)
+	./build/test_square
+	./build/test_square_ui
+	SDL_VIDEODRIVER=dummy ./bin/square --script NNEE.SW --verify-replay --screenshot build/square.bmp
+
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc
+
+.PHONY: square-web playing-web
+square-web: $(SQUARE_ROMS)
+	mkdir -p build/web/no-escape
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/square_web.c $(SQUARE_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createNoEscape -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
+		--embed-file build/routes-square-input.rom --embed-file build/routes-square-world.rom --embed-file build/routes-square-draw.rom \
+		-o build/web/no-escape/no-escape.js
+	cp web/no-escape/index.html web/no-escape/app.js build/web/no-escape/
+	cp web/style.css build/web/
+
+playing-web: garden-web square-web
+
+build/square_native_digest: tests/square_native_digest.c src/square_web.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/square_native_digest.c $(SQUARE_SOURCES) -o $@
+
+.PHONY: square-web-check
+square-web-check: square-web build/square_native_digest
+	node tests/square_web_parity.cjs
 
 .PHONY: garden-web garden-web-check garden-measure
 garden-web: $(GARDEN_ROMS)
@@ -117,7 +159,7 @@ garden-web: $(GARDEN_ROMS)
 		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
 		--embed-file build/garden-view.rom --embed-file build/garden-world.rom \
 		-o build/web/garden.js
-	cp web/index.html web/home.css web/tiny-neighbors-cartridge.png web/playinghaus-chrome.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
+	cp web/index.html web/home.css web/tiny-neighbors-cartridge.png web/no-escape-cartridge.png web/playinghaus-chrome.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
 	mkdir -p build/web/tiny-neighbors
 	cp web/tiny-neighbors/index.html build/web/tiny-neighbors/
 	cp web/.nojekyll build/web/

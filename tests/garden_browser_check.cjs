@@ -17,7 +17,7 @@ try {
   call('wait','--load','networkidle');
   call('snapshot','-i');
   const native = execFileSync('./build/garden_native_digest',{encoding:'utf8'}).trim().split('\n');
-  assert.equal(evaluate('document.querySelector("#digest").textContent'),native[0]);
+  assert.equal(evaluate('document.querySelector("#garden").dataset.digest'),native[0]);
   // All checkpoints in a real browser engine, not only Node's Wasm runtime.
   const actual = evaluate(`(async () => {
     const m=await createGarden(); m._garden_web_reset();
@@ -44,7 +44,7 @@ try {
   // Actual keyboard events through the page host; paused inputs step once.
   call('focus','#garden');
   for(const key of ['ArrowRight','ArrowRight','ArrowRight','ArrowRight','ArrowRight','ArrowDown','ArrowDown','ArrowDown','ArrowDown','Space']) call('press',key);
-  assert.equal(evaluate('document.querySelector("#digest").textContent'),native[10]);
+  assert.equal(evaluate('document.querySelector("#garden").dataset.digest'),native[10]);
   assert.match(evaluate('document.querySelector("#objective").textContent'),/new friend/);
   // Check the displayed RGBA canvas, not just the C-side pixel buffer.
   const canvasHash = evaluate(`(() => {
@@ -55,17 +55,18 @@ try {
   })()`);
   assert.equal(canvasHash,native[10].split(' ')[2]);
   call('click','#reset');
-  assert.equal(evaluate('document.querySelector("#digest").textContent'),native[0]);
+  assert.equal(evaluate('document.querySelector("#garden").dataset.digest'),native[0]);
+  call('set','viewport','390','844');
   call('click','[data-action="2"]');
-  assert.equal(evaluate('document.querySelector("#digest").textContent'),native[1]);
+  assert.equal(evaluate('document.querySelector("#garden").dataset.digest'),native[1]);
   call('click','#play');
-  assert.equal(evaluate('document.querySelector("#step").disabled'),true);
+  assert.equal(evaluate('document.querySelector("#play").textContent'),'Pause');
   call('wait','600');
-  assert.ok(Number(evaluate('document.querySelector("#digest").textContent.split(" ")[0]'))>1);
+  assert.ok(Number(evaluate('document.querySelector("#garden").dataset.digest.split(" ")[0]'))>1);
   evaluate('window.dispatchEvent(new Event("blur"))');
-  const paused = evaluate('document.querySelector("#digest").textContent');
+  const paused = evaluate('document.querySelector("#garden").dataset.digest');
   call('wait','350');
-  assert.equal(evaluate('document.querySelector("#digest").textContent'),paused);
+  assert.equal(evaluate('document.querySelector("#garden").dataset.digest'),paused);
   assert.equal(evaluate('document.querySelector("#play").textContent'),'Play');
   call('set','viewport','390','844');
   assert.equal(evaluate('document.documentElement.scrollWidth <= innerWidth'),true);

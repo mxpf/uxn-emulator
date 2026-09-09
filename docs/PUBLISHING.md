@@ -1,21 +1,32 @@
 # Publishing Playing.haus
 
 The site is static GitHub Pages hosting for `mxpf/uxn-emulator`, served from
-the root of the `gh-pages` branch. The homepage lives at `/` and the game at
-`/tiny-neighbors/`. Only generated browser assets belong there;
+the root of the `gh-pages` branch. The homepage lives at `/`, with games at
+`/tiny-neighbors/` and `/no-escape/`. Only generated browser assets belong there;
 the editable source stays on `constellation-game`.
 
 Before publishing an update, activate Emscripten 4.0.15 and run:
 
 ```sh
-make garden-check garden-web-check
+make garden-check square-check playing-web garden-web-check square-web-check
 ```
 
 Serve `build/web/` locally and run the browser checks described in
-[Tiny Neighbors](TINY-NEIGHBORS.md#browser-host). Commit the source, then copy the
+[Tiny Neighbors](TINY-NEIGHBORS.md#browser-host) and [No Escape!](SQUARE-DEMO.md#browser-host-no-escape).
+Also run the shared interface and homepage checks:
+
+```sh
+node tests/console_browser_check.cjs http://127.0.0.1:8766/
+node tests/playinghaus_browser_check.cjs http://127.0.0.1:8766/
+```
+
+Commit the source, then copy the
 contents of `build/web/` into a clean checkout of `gh-pages`, preserving its
 `CNAME` file (`playing.haus`). Review and commit that artifact update and push
 `gh-pages`. Do not force-push or publish source files, local recordings, or tests.
+Use a fresh build directory when packaging, so obsolete generated files do not
+leak into the release. `square-web` alone builds the new game, but `playing-web`
+builds the complete site and both games.
 
 Porkbun manages the domain. The intended DNS configuration is:
 

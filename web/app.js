@@ -28,17 +28,11 @@
         image.data[i*4+3] = 255;
       }
       context.putImageData(image, 0, 0);
+      // Keep the rendered frame diagnosable without a visible developer panel.
+      canvas.dataset.digest = machine.UTF8ToString(machine._garden_web_digest());
       const state = machine.HEAPU8.subarray(machine._garden_web_state(), machine._garden_web_state()+200);
-      $('objective').textContent = state[5] ? 'A new friend. Stay a while.' : state[4] ? 'It sees you. Say hello with Space.' : 'Find the little golden creature.';
-      const digest = machine.UTF8ToString(machine._garden_web_digest());
-      $('digest').textContent = digest;
-      $('clock').textContent = `Tick ${digest.split(' ')[0]} · ${failed ? 'Stopped' : running ? 'Live' : 'Paused'}`;
-      const lines = [];
-      for (let i = Math.max(0, machine._garden_web_history_count()-14); i < machine._garden_web_history_count(); i++)
-        lines.push(machine.UTF8ToString(machine._garden_web_history(i)));
-      $('messages').textContent = lines.join('\n');
+      $('objective').textContent = state[5] ? 'A new friend. Stay a while.' : state[4] ? 'It sees you. Say hello.' : 'Find the little golden creature.';
       $('play').textContent = running ? 'Pause' : 'Play';
-      $('step').disabled = running || failed;
     }
     function step(action) {
       if (failed) return;
@@ -63,7 +57,6 @@
       else step(action);
     }
     $('play').addEventListener('click', toggle);
-    $('step').addEventListener('click', () => step(0));
     $('reset').addEventListener('click', reset);
     document.querySelectorAll('[data-action]').forEach(button =>
       button.addEventListener('click', () => input(Number(button.dataset.action))));

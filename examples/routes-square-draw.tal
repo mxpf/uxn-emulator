@@ -1,0 +1,14 @@
+( Demo adapter only: 20 x, 21 y, 22 width, 23 height, 24 palette,
+  25 strobe: 1 clear, 2 rectangle. No display ports in the routed host. )
+|0100
+	;receive #d0 DEO2 #0300 #d2 DEO2
+	BRK
+@receive
+	#dd DEI #01 NEQ ?done
+	#d4 DEI #02 NEQ ?done
+	#00 #24 DEO #01 #25 DEO
+	#0300 LDA #30 SFT #20 DEO
+	#0301 LDA #30 SFT #21 DEO
+	#08 #22 DEO #08 #23 DEO
+	#01 #24 DEO #02 #25 DEO
+@done BRK

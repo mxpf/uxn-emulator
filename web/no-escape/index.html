@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17283e">
+  <meta name="description" content="One square. Four walls. Move around, then replay your path.">
+  <title>No Escape! — Playinghaus</title>
+  <link rel="stylesheet" href="../style.css">
+  <script defer src="no-escape.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<main>
+  <canvas id="board" width="128" height="96" tabindex="0" aria-label="No Escape! game board. Use arrow keys to move the square."></canvas>
+  <section class="console" aria-label="Game controls">
+    <h1 class="console-heading">No Escape!</h1>
+    <p id="status" class="status" role="status">Loading…</p>
+    <div class="control-bay">
+      <div class="touch" role="group" aria-label="Movement controls">
+        <div class="dpad">
+          <button data-action="1" class="up" aria-label="Move up" disabled>↑</button>
+          <button data-action="4" class="left" aria-label="Move left" disabled>←</button>
+          <button data-action="3" class="down" aria-label="Move down" disabled>↓</button>
+          <button data-action="2" class="right" aria-label="Move right" disabled>→</button>
+        </div>
+      </div>
+      <p class="keyboard"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> to move &nbsp; · &nbsp; <kbd>P</kbd> to pause<br><kbd>R</kbd> to replay &nbsp; · &nbsp; <kbd>N</kbd> for a new game</p>
+      <div class="toolbar"><button id="pause" disabled>Pause</button><button id="replay" disabled>Replay</button><button id="reset" disabled>New game</button></div>
+    </div>
+    <p id="error" role="alert" hidden></p>
+    <a class="back" href="../">← Back to Playinghaus</a>
+  </section>
+</main>
+<noscript>This game needs JavaScript and WebAssembly enabled.</noscript>
+</body>
+</html>
