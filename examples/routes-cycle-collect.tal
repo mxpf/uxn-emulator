@@ -1,0 +1,22 @@
+( Log six bytes, then acknowledge the completed batch through local route 09.
+  No new batch starts before this acknowledgement, bounding downstream load. )
+|0100
+	;on-receive #d0 DEO2
+	#0300 #d2 DEO2
+	#09 #dc DEO
+	#0600 #d6 DEO2
+	#cc #0600 STA
+	#01 #d8 DEO
+	BRK
+
+@on-receive
+	#0300 LDA #00 LDZ #00 SWP #0400 ADD2 STA
+	#dd DEI #00 LDZ #00 SWP #0500 ADD2 STA
+	#00 LDZ INC DUP #00 STZ
+	#06 EQU ?ack
+	BRK
+
+@ack
+	#00 #00 STZ
+	#01 #d9 DEO
+	BRK

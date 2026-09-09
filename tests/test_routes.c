@@ -44,6 +44,7 @@ same(const Fixture *a, const Fixture *b)
 	CHECK(a->host.booted == b->host.booted);
 	CHECK(a->host.next_node == b->host.next_node);
 	CHECK(a->host.trace_count == b->host.trace_count);
+	CHECK(a->host.trace_sequence == b->host.trace_sequence);
 	CHECK(memcmp(a->host.trace, b->host.trace, sizeof(a->host.trace)) == 0);
 	CHECK(memcmp(a->links, b->links, sizeof(a->links)) == 0);
 	for(unsigned i = 0; i < 3; i++) {
@@ -247,6 +248,52 @@ test_rewire_and_single_node(void)
 }
 
 static void
+test_trace_batches(void)
+{
+	Fixture *f = fresh(); const uint8_t empty[] = {0};
+	RoutedEvent batch[128], sentinel[128]; size_t count = 777;
+	load_stubs(f, empty, sizeof(empty), true); CHECK(routed_boot(&f->host));
+	RoutedHost before = f->host;
+	memset(batch, 0xa5, sizeof(batch)); memcpy(sentinel, batch, sizeof(batch));
+	CHECK(!routed_take_trace(&f->host, batch, 2, &count));
+	CHECK(!routed_take_trace(&f->host, NULL, 128, &count));
+	CHECK(!routed_take_trace(&f->host, batch, 128, NULL));
+	CHECK(count == 777 && memcmp(batch, sentinel, sizeof(batch)) == 0);
+	CHECK(memcmp(&f->host, &before, sizeof(before)) == 0);
+	CHECK(routed_take_trace(&f->host, batch, 128, &count));
+	CHECK(count == 3 && f->host.trace_count == 0 && f->host.trace_sequence == 3);
+	CHECK(memcmp(batch, before.trace, count * sizeof(*batch)) == 0);
+	CHECK(memcmp(batch + count, sentinel + count, (128 - count) * sizeof(*batch)) == 0);
+	CHECK(routed_take_trace(&f->host, NULL, 0, &count)); CHECK(count == 0);
+	CHECK(routed_step(&f->host));
+	CHECK(routed_take_trace(&f->host, batch, 128, &count));
+	CHECK(count == 2 && batch[0].sequence == 3 && batch[1].sequence == 4);
+	for(unsigned i = 0; i < 128 && routed_step(&f->host); i++) { }
+	CHECK(f->host.trace_exhausted && f->host.fault == ROUTED_TRACE_FULL);
+	uint64_t sequence = f->host.trace_sequence;
+	CHECK(routed_take_trace(&f->host, batch, 128, &count));
+	CHECK(count == 128 && f->host.trace_count == 0 && f->host.trace_sequence == sequence);
+	CHECK(f->host.trace_exhausted); terminal(f, ROUTED_TRACE_FULL);
+	/* Taking an omitted-fault trace must also retain its original reason. */
+	CHECK(routed_init(&f->host, f->nodes, 3, f->links, routes, 3, 10000));
+	uint8_t rom[1024] = {0}; size_t n = deo(rom, 0, 1, 0xdc);
+	for(unsigned i = 0; i < 127; i++) n = deo(rom, n, 1, 0xd9);
+	n = deo(rom, n, 99, 0xdc); deo(rom, n, 1, 0xd9);
+	load_stubs(f, rom, sizeof(rom), true); CHECK(!routed_boot(&f->host));
+	CHECK(routed_take_trace(&f->host, batch, 128, &count));
+	CHECK(count == 128 && f->host.trace_exhausted); terminal(f, ROUTED_BAD_ROUTE);
+	/* The sequence number must never silently wrap, even when space remains. */
+	CHECK(routed_init(&f->host, f->nodes, 3, f->links, routes, 3, 10000));
+	CHECK(!f->host.trace_exhausted && f->host.trace_sequence == 0);
+	load_stubs(f, empty, sizeof(empty), true); f->host.trace_sequence = UINT64_MAX - 1;
+	CHECK(!routed_boot(&f->host));
+	CHECK(f->host.trace_exhausted && f->host.trace_sequence == UINT64_MAX);
+	CHECK(routed_take_trace(&f->host, batch, 128, &count));
+	CHECK(count == 1 && batch[0].sequence == UINT64_MAX - 1); terminal(f, ROUTED_TRACE_FULL);
+	free(f);
+}
+
+static void
 test_multiple_wakeups(void)
 {
 	Fixture *f = fresh(); uint8_t rom[240] = {0};
@@ -324,6 +371,7 @@ int main(void)
 {
 	test_three_roms(); test_faults_and_lifecycle();
 	test_fault_trace_boundaries();
+	test_trace_batches();
 	test_rewire_and_single_node(); test_fairness_and_payloads(); test_multiple_wakeups();
 	printf("%u routed-host checks passed\n", checks);
 	return 0;

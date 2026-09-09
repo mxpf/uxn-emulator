@@ -84,6 +84,13 @@ build/test_routes: tests/test_routes.c src/constellation_routes.c src/uxn.c incl
 constellation-routes: build/test_routes $(ROUTED_ROMS)
 	./build/test_routes
 
+build/test_routes_sustained: tests/test_routes_sustained.c src/constellation_routes.c src/uxn.c include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_routes_sustained.c src/constellation_routes.c src/uxn.c -o $@
+
+.PHONY: constellation-sustained
+constellation-sustained: build/test_routes_sustained build/routes-cycle-burst.rom build/routes-relay.rom build/routes-cycle-collect.rom
+	./build/test_routes_sustained
+
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc

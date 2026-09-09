@@ -11,13 +11,14 @@ static void
 event(RoutedHost *h, ConstellationTraceKind kind, uint8_t from, uint8_t to,
 	uint8_t selector, const ConstellationMessage *message)
 {
-	if(h->trace_count == CONSTELLATION_TRACE_CAPACITY) {
+	if(h->trace_count == CONSTELLATION_TRACE_CAPACITY || h->trace_sequence == UINT64_MAX) {
 		h->trace_exhausted = true;
 		if(h->fault == ROUTED_OK) h->fault = ROUTED_TRACE_FULL;
 		return;
 	}
 	RoutedEvent *e = &h->trace[h->trace_count++];
 	memset(e, 0, sizeof(*e));
+	e->sequence = h->trace_sequence++;
 	e->kind = kind; e->from = from; e->to = to; e->selector = selector;
 	if(kind == CONSTELLATION_TRACE_FAULT) e->reason = h->fault;
 	if(message) e->message = *message;
@@ -190,5 +191,16 @@ routed_quiescent(const RoutedHost *h)
 {
 	for(size_t i = 0; i < h->route_count; i++)
 		if(h->links[i].queue.count || h->links[i].waiting) return false;
+	return true;
+}
+
+bool
+routed_take_trace(RoutedHost *h, RoutedEvent *output, size_t capacity, size_t *count)
+{
+	if(!count || capacity < h->trace_count || (h->trace_count && !output)) return false;
+	*count = h->trace_count;
+	if(h->trace_count) memcpy(output, h->trace, h->trace_count * sizeof(*output));
+	memset(h->trace, 0, sizeof(h->trace));
+	h->trace_count = 0;
 	return true;
 }

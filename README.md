@@ -114,6 +114,8 @@ Try the separate multi-ROM [routing experiment](docs/CONSTELLATION-ROUTES.md)
 with `make constellation-routes`: three unchanged Uxn ROMs, cartridge-declared
 routes, independent bounded queues, and full-state deterministic replay checks.
 It does not replace v0 or impose game-specific roles.
+`make constellation-sustained` checks 1,024 acknowledged cycles, repeated queue
+recovery, and exact replay with different bounded trace-consumption intervals.
 
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.

@@ -15,6 +15,7 @@ typedef enum {
 	ROUTED_TRACE_FULL
 } RoutedFault;
 typedef struct {
+	uint64_t sequence;
 	ConstellationTraceKind kind;
 	RoutedFault reason;
 	uint8_t from, to, selector;
@@ -38,6 +39,7 @@ typedef struct RoutedHost {
 	RoutedNode *nodes;
 	RoutedLink *links;
 	size_t node_count, route_count, next_node, trace_count;
+	uint64_t trace_sequence; /* Next event number; unaffected by taking batches. */
 	uint64_t ceiling;
 	bool booted;
 	bool trace_exhausted; /* An event was omitted, independently of first fault. */
@@ -54,5 +56,10 @@ bool routed_load(RoutedHost *h, unsigned node, const uint8_t *rom, size_t length
 bool routed_boot(RoutedHost *h);
 bool routed_step(RoutedHost *h);
 bool routed_quiescent(const RoutedHost *h);
+/* Between boot/step calls, copy the entire pending batch to disjoint caller
+ * storage, then clear only that buffer. Failure leaves host/output unchanged.
+ * Faults remain terminal; taking a truncated trace cannot repair it. */
+bool routed_take_trace(RoutedHost *h, RoutedEvent *output, size_t capacity,
+	size_t *count);
 
 #endif

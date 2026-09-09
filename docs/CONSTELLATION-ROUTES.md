@@ -121,7 +121,7 @@ at boot, repeat boots, or loads after boot are rejected without running code.
 Undeclared routes, missing required vectors, instruction ceilings, and trace
 exhaustion are terminal for the entire host. No rollback is performed.
 
-The bounded 128-event trace includes boots, turns, sends, full sends, deliveries,
+The bounded 128-event pending trace includes boots, turns, sends, full sends, deliveries,
 route-specific wake-ups, idle turns, and fault reasons. Message events contain
 the actual source, destination, source-local selector, and exact copied payload.
 Bad-route fault events retain the attempted selector and use `ff` for the
@@ -129,9 +129,38 @@ unknown destination, even if the ROM subsequently changes its selector register.
 The independent `trace_exhausted` flag marks any omitted event while preserving
 the first fault reason. Filling the last available slot alone does not set it;
 an attempted event beyond capacity does, including an omitted fault event.
-If exhaustion occurs inside a
-callback, further sends are suppressed while that bounded evaluation returns;
+If exhaustion occurs inside a callback, further sends are suppressed while that bounded evaluation returns;
 no later callback runs. The first fault reason is retained.
+
+### Consuming bounded batches
+
+Every recorded event has a zero-based 64-bit `sequence`. Taking a batch does
+not reset this sequence; reinitializing the session does. Sequence exhaustion
+also raises `ROUTED_TRACE_FULL` and marks the record incomplete rather than
+wrapping its numbering.
+
+Between boot/step calls, `routed_take_trace(host, output, capacity, count)` copies
+the entire pending batch to caller-owned storage, then zeros the internal
+buffer and resets only its pending count. It does not change machines, queues,
+scheduler position, the next sequence number, or fault state. Callers must use
+valid disjoint output/count storage that does not overlap the host or its owned
+state, and must not call this concurrently with an evaluation.
+
+If output capacity is too small, the count pointer is null, or a nonempty batch
+has no output buffer, the call fails without changing the host or outputs.
+An empty batch succeeds with a count of zero. Taking a failed session's pending
+events is allowed for inspection; it cannot clear faults or repair truncation.
+
+The caller owns the copied batch and is responsible for comparing, writing, or
+otherwise retaining it before reusing that storage. Sequence numbers reveal
+gaps/reordering; they do not themselves preserve discarded event contents.
+The caller must also preserve the session's fault and incomplete-record status
+when exporting evidence. There is no automatic disk logger or callback sink.
+
+Capacity is still a hard limit **within** a boot or turn. A single evaluation
+can exhaust the buffer before the caller gets control back; consuming between
+turns does not silently relax that bound. A caller that consumes too infrequently
+still gets a terminal error, never overwritten events.
 
 There are no external inputs in this proof. Replay means a fresh execution of
 the same ROM bytes, declaration order, initial memory, and instruction ceiling.
@@ -161,7 +190,53 @@ bad selector, a fault using the last trace slot, an omitted fault after a full
 trace, and trace exhaustion preceding another fault attempt. Each is repeated
 in a fresh host with full-state comparison and checked for terminal behavior.
 
-This earns a routing experiment, not a production console. Multi-route writable
-fairness under sustained load, long-running trace consumption, external input
-replay, browser parity for this host, packaging, and larger workloads still need
-targeted tests before being promised. Game-specific roles remain outside it.
+## Sustained cooperation
+
+Run `make constellation-sustained` for a native, bounded-memory long-run test.
+The three-node arrangement remains a burst sender, relay, and collector, with
+an added route `(2, 09, 0)` for acknowledgements. New cycle versions of the burst
+and collector ROMs reuse the original relay ROM. The sender waits for an
+acknowledgement before starting each new batch and stops after 1,024 cycles.
+These are test protocols, not roles or pacing rules in the host.
+
+Observed on the 2026-09-09 local run:
+
+| Evidence | Result |
+| --- | ---: |
+| Scheduler turns | 18,433 |
+| Completed cycles | 1,024 |
+| Recorded events | 50,181 |
+| Full sends and successful wake-up retries | 1,024 each |
+| Deliveries on routes 0/01, 0/02, 1/07, 2/09 | 5,120 / 1,024 / 5,120 / 1,024 |
+| Peak occupancy on those routes | 4 / 1 / 2 / 1 |
+| Largest observed delivery gaps, including startup | 6 / 18 / 6 / 19 turns |
+| Largest consumed batches in the two runs | 9 / 24 events |
+
+The first execution consumes after boot and every turn; a fresh replay consumes
+after boot, every seven turns, and at completion. The test compares **every
+event byte for byte** across those different batch boundaries using only a
+bounded pending batch. Sequence continuity and a cumulative diagnostic hash
+are checked too. The resulting hash was `b9b4190851941c28`; its encoding is
+sequence (eight little-endian bytes), kind, reason, source, destination,
+selector, length, and payload, folded with 64-bit FNV-1a. It is not a
+cryptographic proof or a substitute for retaining a trace.
+
+After every turn, the test compares bank-zero RAM, stacks, device bytes,
+instruction counts, queue contents, pending wake-ups, scheduler cursors, fault
+state, and next trace sequence. All allocated RAM is compared at boot and
+completion. Trace buffers themselves may differ between consumption points;
+their concatenated event streams must not. Every payload and route delivery
+total is also checked against the fixture's expected protocol, and every route
+must make progress within 24 turns throughout this workload. Both runs finish
+quiescent with empty queues and no trace truncation.
+
+The short and sustained suites also passed AddressSanitizer and
+UndefinedBehaviorSanitizer on this local run. These are logical-turn results,
+not a real-time latency, throughput, or hours-long soak benchmark.
+
+This earns a sustained **controlled workload**, not a production console or a
+general progress guarantee. The acknowledgement protocol keeps the relay's
+downstream queue below capacity; only the sender's route 01 repeatedly fills.
+Competing self-rearming writable callbacks, arbitrary cyclic backpressure,
+external input replay, browser parity for this host, packaging, and larger
+workloads still need targeted tests. Game-specific roles remain outside it.
