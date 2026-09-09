@@ -1,0 +1,32 @@
+( Identical input-sensitive relay on three nodes. Three circulating tokens
+  keep route occupancy below four; inputs change state but create no tokens.
+  ZP: 00-01 input count, 02 ordered input hash, 03 current input byte,
+  04 last input source, 06-07 internal receives, 08 retired, 09 final xor.
+  Payloads and button interpretation belong to this fixture, not the host. )
+|0100
+	;on-receive #d0 DEO2
+	#0700 #d2 DEO2
+	#0700 #d6 DEO2
+	#02 #d8 DEO
+	#01 #dc DEO
+	#40 #0700 STA
+	#01 #d9 DEO
+	BRK
+
+@on-receive
+	#dd DEI #ff EQU ?input
+	#06 LDZ2 INC2 #06 STZ2
+	#0701 LDA #03 LDZ EOR #0701 STA
+	#0700 LDA #01 SUB DUP #0700 STA #00 EQU ?retire
+	#01 #d9 DEO
+	BRK
+@retire
+	#08 LDZ INC #08 STZ
+	#09 LDZ #0701 LDA EOR #09 STZ
+	BRK
+@input
+	#dd DEI #04 STZ
+	#00 LDZ2 INC2 #00 STZ2
+	#0700 LDA #03 STZ
+	#02 LDZ #02 MUL #03 LDZ ADD #02 STZ
+	BRK

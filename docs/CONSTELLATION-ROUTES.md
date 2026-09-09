@@ -12,6 +12,8 @@ Each route is `(source node, local selector, destination node)`. Node IDs are
 positions in that cartridge's list, not roles understood by the host. Each
 source's selector must be unique. Different sources may reuse the same selector;
 multiple selectors can lead to the same destination. Self-routes are allowed.
+Source `ff` explicitly declares an external input route instead of a node;
+see **External input and replay** below. Destinations must always be real nodes.
 
 The proof cartridge is declared as C tables in `tests/test_routes.c`:
 
@@ -51,7 +53,8 @@ wrap inside bank-zero RAM; subsequent sender writes cannot alter queued data.
 Zero-byte messages consume a slot and invoke the receive vector.
 
 This byte-addressed experiment accepts 1–255 nodes and 0–255 routes, with node
-IDs and local selectors 0–254 (`ff` means none). These are defensive encoding
+IDs and local selectors 0–254 (`ff` is reserved for external source/absent
+metadata, never a node or selector). These are defensive encoding
 bounds, not a chosen console size or a demonstrated throughput capability.
 Testing here uses one or three nodes. Each current Uxn struct still reserves
 1 MiB of RAM internally, while the guest addresses only 64 KB. No shared memory
@@ -69,7 +72,7 @@ The routed host adds:
 | Register | Meaning |
 | --- | --- |
 | `dc` | Sender-local route selector for the next send |
-| `dd` | Read-only actual sender node ID during a receive callback; `ff` otherwise |
+| `dd` | Read-only sender node ID, or `ff` for external input; `ff` outside receive callbacks |
 | `de` | Read-only local route selector during a writable callback; `ff` otherwise |
 
 `DEI` of `dd`/`de` reads supervisor-owned metadata, even if a ROM tries to
@@ -170,7 +173,8 @@ can exhaust the buffer before the caller gets control back; consuming between
 turns does not silently relax that bound. A caller that consumes too infrequently
 still gets a terminal error, never overwritten events.
 
-There are no external inputs in this proof. Replay means a fresh execution of
+There are no external inputs in the original short, sustained, or ring proofs.
+Their replay means a fresh execution of
 the same ROM bytes, declaration order, initial memory, and instruction ceiling.
 The test compares traces, all allocated RAM, stacks, device bytes, instruction
 counts, queues, pending notifications, round-robin cursors, callback-class
@@ -260,8 +264,9 @@ general progress guarantee. The acknowledgement protocol keeps the relay's
 downstream queue below capacity; only the sender's route 01 repeatedly fills.
 The separate starvation regression covers a self-rearming writable callback
 competing with receive work. The ring fixture below adds controlled cyclic
-pressure. Arbitrary application deadlocks, external input replay, browser
-parity for this host, packaging, and larger workloads still need targeted
+pressure. The input fixture below adds recorded external submissions.
+Arbitrary application deadlocks, live browser input/parity for this host,
+packaging, and larger workloads still need targeted
 tests. Game-specific roles remain outside it.
 
 ## Cyclic queue pressure
@@ -316,3 +321,82 @@ This demonstrates lossless completion under repeated cyclic queue pressure
 for a finite, explicitly buffered protocol. It does not establish a general
 deadlock-free messaging system, an unbounded streaming protocol, or real-time
 performance guarantees.
+
+## External input and replay
+
+External input uses the same bounded route queues and receive scheduler, not
+a new guest instruction, interrupt, input priority, or button device. Declare
+`(ff, selector, destination)` in the route table. External selectors are unique
+within source `ff`; a node may independently reuse that selector. Input routes
+count against the existing 255-route limit and each has four message slots.
+The host neither creates an implicit route nor chooses a special input node.
+
+After boot, between evaluations, the caller may submit
+`routed_input(host, selector, data, length)`. Calls are serialized with all
+other host operations; concurrent/reentrant submission is unsupported. This
+copies 0–255 bytes, advances no scheduler turn, and executes no guest code.
+
+| Result | Meaning |
+| --- | --- |
+| `ROUTED_INPUT_ACCEPTED` | Payload copied into the declared input queue and admission recorded |
+| `ROUTED_INPUT_FULL` | Rejection recorded; queue unchanged; caller retains the payload and decides whether/when to retry |
+| `ROUTED_INPUT_INVALID` | Before boot, unknown/out-of-range selector, oversized payload, or null nonempty data; all state unchanged |
+| `ROUTED_INPUT_FAULT` | Host already faulted, or this attempt could not be recorded; session is terminal |
+
+Queue-full external submissions never arm a ROM's writable callback. There
+is no automatic retry, dropping, coalescing, or unbounded pending-input list.
+An invalid submission is a caller error, not a guest protocol fault. Faulted
+hosts return `FAULT` even if the supplied arguments would otherwise be invalid.
+If trace capacity or sequence numbering is exhausted, the input is not
+admitted; consuming the trace cannot make the failed session resumable.
+
+Admissions and full rejections use the existing `SEND` and `SEND_FULL` trace
+kinds with source `ff`, the actual destination, external selector, and exact
+payload. Normal delivery also records source `ff`. During that receive
+callback `d5` is one and `dd` is `ff`; outside receive callbacks `d5` is zero.
+ROMs cannot impersonate the external source by selecting its route. Different
+external selectors are visible to the host trace but not separately identified
+in guest receive metadata; any additional channel meaning belongs in the
+application's payload protocol. Existing node-to-node behavior is unchanged.
+
+The caller records each submission's **completed-turn boundary**, order among
+submissions at that boundary, selector, payload, and result. Boundary zero is
+after all boots and before the first scheduled turn. Replay uses the same ROMs,
+topology, initial memory, ceiling, and recorded submission order, reproducing
+both admitted and rejected attempts. No wall clock or host-side timestamp
+queue is added. Quiescence means no current queue/notification work, not that
+the external input stream has ended; a later submission can make work ready.
+
+### Input evidence
+
+Run `make constellation-input`. Three copies of a 144-byte fixture ROM pass
+three finite tokens around a ring. Recorded button-state bytes arrive on an
+external route to node zero while that ring remains busy. The fixture changes
+its local state on external receives and uses that state to transform internal
+messages. Button encoding is entirely a fixture choice.
+
+The local 2026-09-09 run completed 220 turns with 647 exact trace events:
+12 submitted attempts, 10 admitted and delivered inputs, two full rejections,
+and 192 internal deliveries. An explicit retry succeeds after a receive frees
+space. An independent protocol model checks queue order, every transformed
+internal payload, input order, receive counts, retirements, and final state.
+The live fixture captures a bounded in-memory input log; a fresh host replays
+that log rather than consulting the synthetic source schedule. One run consumes
+trace every turn and the replay every seven; concatenated events match byte
+for byte, and guest/scheduler state matches at every boundary. All allocated
+guest memory is compared at boot and completion.
+
+Changing the first input byte changes the final combined token value from 14
+to 12, while that changed recording also replays exactly. This checks that
+input influences the cooperating machines, not just an input counter.
+
+Boundary tests cover zero/255-byte payloads, wrapping receive copies, caller
+buffer mutation, full/retry FIFO order, independent input-route capacity,
+no immediate callback or scheduler advance, invalid calls without mutation,
+source spoof attempts, missing receive vectors, resuming from quiescence,
+and trace/sequence exhaustion during both admission and rejection. The suite
+also passes AddressSanitizer and UndefinedBehaviorSanitizer.
+
+This is an in-memory input boundary and recording experiment, not a portable
+saved-replay format, real keyboard/controller adapter, browser implementation,
+or guarantee that arbitrary external input rates can be absorbed.

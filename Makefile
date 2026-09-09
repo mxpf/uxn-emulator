@@ -98,6 +98,13 @@ build/test_routes_ring: tests/test_routes_ring.c src/constellation_routes.c src/
 constellation-ring: build/test_routes_ring build/routes-ring.rom
 	./build/test_routes_ring
 
+build/test_routes_input: tests/test_routes_input.c src/constellation_routes.c src/uxn.c include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_routes_input.c src/constellation_routes.c src/uxn.c -o $@
+
+.PHONY: constellation-input
+constellation-input: build/test_routes_input build/routes-input.rom
+	./build/test_routes_input
+
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc

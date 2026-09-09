@@ -95,7 +95,8 @@ routed_init(RoutedHost *h, RoutedNode *nodes, size_t count,
 		h->fault = ROUTED_BAD_CONFIG; return false;
 	}
 	for(size_t i = 0; i < route_count; i++) {
-		if(routes[i].from >= count || routes[i].to >= count || routes[i].selector == ROUTED_NONE) {
+		if((routes[i].from != ROUTED_NONE && routes[i].from >= count) ||
+			routes[i].to >= count || routes[i].selector == ROUTED_NONE) {
 			h->fault = ROUTED_BAD_CONFIG; return false;
 		}
 		for(size_t j = 0; j < i; j++)
@@ -198,6 +199,33 @@ routed_step(RoutedHost *h)
 	}
 	event(h, CONSTELLATION_TRACE_IDLE, n->id, n->id, ROUTED_NONE, NULL);
 	return h->fault == ROUTED_OK;
+}
+
+RoutedInputResult
+routed_input(RoutedHost *h, unsigned selector, const uint8_t *data, size_t length)
+{
+	if(h->fault != ROUTED_OK) return ROUTED_INPUT_FAULT;
+	if(!h->booted || selector >= ROUTED_NONE || length > CONSTELLATION_MESSAGE_MAX ||
+		(length && !data)) return ROUTED_INPUT_INVALID;
+	RoutedLink *link = NULL;
+	for(size_t i = 0; i < h->route_count; i++)
+		if(h->links[i].route.from == ROUTED_NONE && h->links[i].route.selector == selector) {
+			link = &h->links[i]; break;
+		}
+	if(!link) return ROUTED_INPUT_INVALID;
+	ConstellationMessage message = {0};
+	message.length = (uint8_t)length;
+	if(length) memcpy(message.data, data, length);
+	ConstellationQueue *q = &link->queue;
+	bool full = q->count == CONSTELLATION_QUEUE_CAPACITY;
+	/* Do not admit input whose admission cannot be recorded. */
+	event(h, full ? CONSTELLATION_TRACE_SEND_FULL : CONSTELLATION_TRACE_SEND,
+		ROUTED_NONE, link->route.to, (uint8_t)selector, &message);
+	if(h->fault != ROUTED_OK) return ROUTED_INPUT_FAULT;
+	if(full) return ROUTED_INPUT_FULL;
+	q->messages[(q->head + q->count) % CONSTELLATION_QUEUE_CAPACITY] = message;
+	q->count++;
+	return ROUTED_INPUT_ACCEPTED;
 }
 
 bool

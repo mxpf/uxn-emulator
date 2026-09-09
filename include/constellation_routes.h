@@ -9,6 +9,11 @@ enum { ROUTED_MAX_NODES = 255, ROUTED_MAX_ROUTES = 255, ROUTED_NONE = 255,
 	ROUTED_WRITABLE_ROUTE = 0xde };
 
 typedef struct { uint8_t from, selector, to; } RoutedRoute;
+/* ROUTED_NONE as a route source declares an external input, never a node. */
+typedef enum {
+	ROUTED_INPUT_ACCEPTED, ROUTED_INPUT_FULL, ROUTED_INPUT_INVALID,
+	ROUTED_INPUT_FAULT
+} RoutedInputResult;
 typedef enum {
 	ROUTED_OK, ROUTED_BAD_CONFIG, ROUTED_BAD_ROUTE, ROUTED_LIMIT,
 	ROUTED_RECEIVE_VECTOR_MISSING, ROUTED_WRITABLE_VECTOR_MISSING,
@@ -56,6 +61,12 @@ bool routed_init(RoutedHost *h, RoutedNode *nodes, size_t node_count,
 bool routed_load(RoutedHost *h, unsigned node, const uint8_t *rom, size_t length);
 bool routed_boot(RoutedHost *h);
 bool routed_step(RoutedHost *h);
+/* Submit only between evaluations, after boot, on a declared external selector.
+ * Copies 0..255 bytes; never invokes guest code. FULL requires caller-owned
+ * retention/retry. Record call order and completed-turn boundary for replay.
+ * INVALID leaves all state unchanged; FAULT is terminal. */
+RoutedInputResult routed_input(RoutedHost *h, unsigned selector,
+	const uint8_t *data, size_t length);
 bool routed_quiescent(const RoutedHost *h);
 /* Between boot/step calls, copy the entire pending batch to disjoint caller
  * storage, then clear only that buffer. Failure leaves host/output unchanged.
