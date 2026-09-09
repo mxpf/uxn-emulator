@@ -1,5 +1,13 @@
 # Minimal Playinghaus assets
 
+## Final cartridge branding revision
+
+The first cartridge composition is used, with the supplied Constellation logo in cream replacing Playinghaus on its label. No label subtitle or footer. The final homepage displays only the chrome masthead and centered clickable cartridge; description and separate button were removed at the user's request.
+
+Precise image edit. Image 1 is the approved FIRST Tiny Neighbors cartridge and must be preserved. Image 2 is the supplied Constellation logo artwork.
+Change ONLY the small "PLAYINGHAUS" branding at the top of the orange paper label: remove that word and replace it with the COMPLETE logo from image 2, including the four-direction curved parallel-stripe star emblem on the left and the custom "CONSTELLATION" wordmark to its right. Recolor ALL visible ink in the supplied logo to the exact same pale warm cream as the large TINY NEIGHBORS title in image 1. No blue, no rainbow colors, no black background rectangle. Preserve the logo's distinctive letter shapes and stripe/star geometry; scale it proportionally to fit neatly centered above TINY, within the same small brand-line area, with a little breathing space. It should look like a one-color cream printed publisher logo on the orange label.
+Everything else in image 1 must remain unchanged: large title TINY NEIGHBORS, original garden illustration, placement and proportions, original black cartridge shell and top ridges, white background, lighting, shadow and image framing. Do not add subtitle, tagline, catalog number, footer copy or any additional text. Only the Constellation logo and the large title appear on the label. No added decoration. Output same 1122 x 1402 portrait framing.
+
 Generated/edited with the built-in image-generation tool. User approved the cartridge before implementation. Previous cover and logo originals are preserved.
 
 - [Cartridge](../web/tiny-neighbors-cartridge.png)
@@ -23,4 +31,3 @@ Use case: background-extraction. Edit the attached approved Playinghaus chrome l
 Preserve exactly the existing word "playinghaus", the custom connected script letter shapes, proportions, baseline, underline swash, mirror-polished silver finish, pale blue upper reflections, warm amber lower reflections and three restrained highlight glints. Do not redesign the lettering or add anything.
 Remove all black backdrop and warm halo, including dark background visible inside letter counters and around the underline. Replace with uniform pure white #ffffff, no off-white, no vignette, no texture. Keep dark reflection bands INSIDE the chrome strokes; these are part of the metallic finish, not backdrop. Clean anti-aliased edge with no black fringe. Keep thin dark silver contours for readability on white.
 Output a tightly framed wide horizontal image, approximately 1536 x 640, the complete logo filling about 90% of canvas width and 80% height, modest equal outer white margin, no clipping of descenders or swash. This is the SAME approved logo on white, not a new variation.
-

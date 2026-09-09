@@ -14,17 +14,16 @@ try {
   assert.match(evaluate('document.title'), /Playinghaus/);
   assert.equal(evaluate('document.scripts.length'), 0);
   assert.equal(evaluate('Array.from(document.images).every(i=>i.complete && i.naturalWidth>0)'), true);
-  assert.equal(evaluate('document.querySelector("nav, footer, .console, .about, .box-cover")'), null);
+  assert.equal(evaluate('document.querySelector("nav, footer, .console, .about, .box-cover, .game-copy, .start, main p, button")'), null);
   assert.equal(evaluate('getComputedStyle(document.documentElement).backgroundColor'), 'rgb(255, 255, 255)');
-  assert.deepEqual(evaluate('Array.from(document.querySelectorAll(".cartridge-link, .start"), a=>a.getAttribute("href"))'), ['tiny-neighbors/','tiny-neighbors/']);
+  assert.deepEqual(evaluate('Array.from(document.querySelectorAll("main a"), a=>a.getAttribute("href"))'), ['tiny-neighbors/']);
   assert.deepEqual(evaluate('Array.from(document.querySelectorAll("img"), i=>[i.getAttribute("src"),i.naturalWidth,i.naturalHeight])'), [['playinghaus-chrome.png',1942,809],['tiny-neighbors-cartridge.png',1122,1402]]);
   for(const width of [320,393,540,768,1440]) {
     call('set','viewport',String(width),'900');
     assert.equal(evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `overflow at ${width}`);
-    assert.equal(evaluate('document.querySelector(".start").getBoundingClientRect().height >= 44'),true);
-    assert.equal(evaluate('document.querySelector(".game-copy").scrollWidth <= document.querySelector(".game-copy").clientWidth'),true,`clipped title at ${width}`);
+    assert.equal(evaluate('document.querySelector(".cartridge-link").getBoundingClientRect().height >= 44'),true);
     assert.equal(evaluate('(()=>{const image=document.querySelector(".cartridge").getBoundingClientRect(); return image.left>=0 && image.right<=innerWidth && Math.abs(image.height/image.width-1402/1122)<0.01;})()'),true,`cropped or distorted cartridge at ${width}`);
-    if(width>=768) assert.equal(evaluate('document.querySelector(".game-copy").getBoundingClientRect().left > document.querySelector(".cartridge").getBoundingClientRect().right'),true,'description should be on the right');
+    assert.equal(evaluate('(()=>{const r=document.querySelector(".cartridge").getBoundingClientRect();return Math.abs((r.left+r.right)/2-innerWidth/2)<1;})()'),true,`cartridge not centered at ${width}`);
   }
   call('hover','.cartridge-link');
   call('wait','300');
@@ -33,7 +32,7 @@ try {
   assert.equal(evaluate('getComputedStyle(document.querySelector(".cartridge")).transform'), 'none');
   assert.equal(evaluate('getComputedStyle(document.querySelector(".cartridge")).transitionDuration'), '0s');
   call('set','viewport','393','852');
-  call('focus','.start');
+  call('focus','.cartridge-link');
   call('press','Enter');
   call('wait','--load','networkidle');
   assert.match(call('get','url'), /\/tiny-neighbors\//);
@@ -61,5 +60,5 @@ try {
   const errors=JSON.parse(call('errors','--json'));
   assert.equal(errors.success,true);
   assert.deepEqual(errors.data.errors,[]);
-  console.log('Playinghaus passed: five widths, minimal white page, chrome logo, cartridge art, both launch links, keyboard access, game encounter, ROM downloads, return navigation, no browser errors.');
+  console.log('Playinghaus passed: five widths, centered cartridge, no copy or button, hover zoom, reduced motion, keyboard/click launch, game encounter, ROM downloads, return navigation, no browser errors.');
 } finally { call('close'); }
