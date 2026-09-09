@@ -1,0 +1,16 @@
+( Forward each received byte through local route 07. Record input and source.
+  This fixture's downstream queue stays below capacity; not a general relay. )
+|0100
+	;on-receive #d0 DEO2
+	#0300 #d2 DEO2
+	#0300 #d6 DEO2
+	#01 #d8 DEO
+	#07 #dc DEO
+	BRK
+
+@on-receive
+	#0300 LDA #00 LDZ #00 SWP #0400 ADD2 STA
+	#dd DEI #00 LDZ #00 SWP #0500 ADD2 STA
+	#00 LDZ INC #00 STZ
+	#01 #d9 DEO
+	BRK

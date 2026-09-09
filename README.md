@@ -110,6 +110,11 @@ wandering creature, a live message panel, and recorded input replay. See
 Its [measured baseline](docs/GARDEN-BASELINE.md) records cross-host tests,
 resource use, and what the two-ROM prototype does and does not prove.
 
+Try the separate multi-ROM [routing experiment](docs/CONSTELLATION-ROUTES.md)
+with `make constellation-routes`: three unchanged Uxn ROMs, cartridge-declared
+routes, independent bounded queues, and full-state deterministic replay checks.
+It does not replace v0 or impose game-specific roles.
+
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.

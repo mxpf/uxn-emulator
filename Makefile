@@ -73,6 +73,17 @@ constellation-recovery: $(CONSTELLATION_BIN) $(CONSTELLATION_TEST_BIN) build/con
 	./$(CONSTELLATION_BIN) build/constellation-burst.rom build/constellation-collect.rom
 	./$(CONSTELLATION_TEST_BIN) --recovery build/constellation-burst.rom build/constellation-collect.rom
 
+ROUTED_ROMS := build/routes-burst.rom build/routes-relay.rom build/routes-collect.rom
+build/routes-%.rom: examples/routes-%.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+
+build/test_routes: tests/test_routes.c src/constellation_routes.c src/uxn.c include/constellation_routes.h include/constellation.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_routes.c src/constellation_routes.c src/uxn.c -o $@
+
+.PHONY: constellation-routes
+constellation-routes: build/test_routes $(ROUTED_ROMS)
+	./build/test_routes
+
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc

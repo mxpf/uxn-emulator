@@ -1,0 +1,11 @@
+( Log payloads at 0400 and authenticated source IDs at 0500. )
+|0100
+	;on-receive #d0 DEO2
+	#0300 #d2 DEO2
+	BRK
+
+@on-receive
+	#0300 LDA #00 LDZ #00 SWP #0400 ADD2 STA
+	#dd DEI #00 LDZ #00 SWP #0500 ADD2 STA
+	#00 LDZ INC #00 STZ
+	BRK

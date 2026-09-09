@@ -15,13 +15,18 @@ ready. Normal play never fills even half a queue. The view receives the entire
 world snapshot; the game does not test deliberately separate knowledge,
 three-node routing, or deductions made from partial information.
 
-The next useful creative experiment is a separate, tightly bounded locked-room
-mystery: presentation, scene/director, and deduction roles. Define their messages
-and who is allowed to know each fact before expanding the host. A fact should
-reach the deduction role only through an explicit message, and replay should
-reproduce the same deduction and trace. This is a proposed next step, not a
-three-ROM feature implemented by this pass. Do not generalize to eight nodes,
-dynamic topology, or asset services on the strength of this garden alone.
+The next useful platform experiment is explicit routing among more than two
+ROMs, with a fixed declared topology, bounded queues, and deterministic replay.
+It should impose no application roles. A cartridge decides what its machines
+do and how they connect; the host supplies general communication mechanisms.
+The [routed-host experiment](CONSTELLATION-ROUTES.md) now tests that next step
+separately, without changing this garden or its two-ROM host.
+
+A locked-room mystery remains one possible application, not the platform's
+roadmap or a required presentation/scene/deduction layout. Games should reveal
+useful capabilities, not become structures hard-coded into the emulator.
+Larger node counts, dynamic topology, and asset services still need their own
+evidence; this baseline does not establish their necessity or performance.
 
 ## Coverage added
 
