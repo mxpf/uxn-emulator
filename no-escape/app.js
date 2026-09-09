@@ -13,7 +13,7 @@
     $('status').textContent = 'Stopped';
   };
   try {
-    machine = await createNoEscape({locateFile: (path, prefix) => `${prefix}${path}?v=controls-2`});
+    machine = await createNoEscape({locateFile: (path, prefix) => `${prefix}${path}?v=runner-1`});
     const context = $('board').getContext('2d');
     if (!context) throw new Error('Canvas is unavailable.');
     const image = context.createImageData(128, 96);

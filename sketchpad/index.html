@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#20354b">
+  <meta name="description" content="A small sheet of pixels. Move, draw and erase in your browser.">
+  <title>Sketchpad — Playinghaus</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css?v=toggles-1">
+  <script defer src="sketch.js?v=toggles-1"></script>
+  <script defer src="app.js?v=toggles-1"></script>
+</head>
+<body>
+<main>
+  <canvas id="paper" width="128" height="96" tabindex="0" aria-label="Sketch paper, 32 by 24 cells. Arrow keys move the cursor, Space toggles drawing, X toggles erasing."></canvas>
+  <section aria-label="Sketch controls">
+    <header><h1>Sketchpad</h1><span>CONSTELLATION / STUDY 01</span></header>
+    <p id="status" role="status">Loading paper…</p>
+    <div class="controls">
+      <div class="dpad" role="group" aria-label="Move cursor">
+        <button class="up" data-action="1" aria-label="Move up" disabled>↑</button>
+        <button class="left" data-action="4" aria-label="Move left" disabled>←</button>
+        <button class="down" data-action="3" aria-label="Move down" disabled>↓</button>
+        <button class="right" data-action="2" aria-label="Move right" disabled>→</button>
+      </div>
+      <div class="marks" role="group" aria-label="Mark paper">
+        <button data-action="5" aria-pressed="false" disabled>Draw</button>
+        <button data-action="6" aria-pressed="false" disabled>Erase</button>
+      </div>
+    </div>
+    <p class="keys">Arrow keys move · Space toggles Draw · X toggles Erase<br>Click the active tool again to move without marking.</p>
+    <p id="error" role="alert" hidden></p>
+    <footer>A little sheet of pixels. Nothing is saved when you leave.</footer>
+    <a class="back" href="../">← Back to Playinghaus</a>
+  </section>
+</main>
+<noscript>This prototype needs JavaScript and WebAssembly.</noscript>
+</body>
+</html>
