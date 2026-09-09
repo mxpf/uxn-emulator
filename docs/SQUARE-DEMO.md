@@ -28,6 +28,10 @@ node 1, and node 1 to node 2. Their ordinary Uxn ROMs are:
 | `routes-square-world` | 207 | Move within a clamped 16-by-12 board and publish coordinates |
 | `routes-square-draw` | 81 | Convert coordinates into clear/rectangle commands |
 
+Startup uses the [shared runner](CONSTELLATION-RUNNER.md). The ROM spans,
+route table, drawing attachment and ceiling are an explicit in-memory
+declaration; the runner assigns no meaning to these three application roles.
+
 The native shell maps keys to bytes and paces three scheduler turns per visual
 update, roughly every 16 ms. Actual submission boundaries and ordering are
 recorded; playback is driven by those logical turns, not the wall clock.

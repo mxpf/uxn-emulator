@@ -105,8 +105,32 @@ build/test_routes_input: tests/test_routes_input.c src/constellation_routes.c sr
 constellation-input: build/test_routes_input build/routes-input.rom
 	./build/test_routes_input
 
-SQUARE_SOURCES := src/square_demo.c src/constellation_routes.c src/uxn.c
+SQUARE_SOURCES := src/square_demo.c src/constellation_runner.c src/constellation_routes.c src/uxn.c
 SQUARE_ROMS := build/routes-square-input.rom build/routes-square-world.rom build/routes-square-draw.rom
+
+RUNNER_SOURCES := src/constellation_runner.c src/constellation_routes.c src/uxn.c
+build/test_runner: tests/test_runner.c $(RUNNER_SOURCES) include/constellation_runner.h include/constellation_routes.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_runner.c $(RUNNER_SOURCES) -o $@
+
+.PHONY: runner-check runner-web-check
+build/test_runner_alloc: tests/test_runner_alloc.c $(RUNNER_SOURCES) include/constellation_runner.h include/constellation_routes.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_runner_alloc.c src/constellation_routes.c src/uxn.c -o $@
+
+runner-check: build/test_runner build/test_runner_alloc $(ROUTED_ROMS)
+	./build/test_runner
+	./build/test_runner_alloc
+
+runner-web-check: runner-check
+	mkdir -p build/runner-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/test_runner.c $(RUNNER_SOURCES) \
+		-sSTACK_SIZE=262144 -sSTACK_OVERFLOW_CHECK=2 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		--embed-file build/routes-burst.rom --embed-file build/routes-relay.rom --embed-file build/routes-collect.rom \
+		-o build/runner-web/check.js
+	node build/runner-web/check.js
+	cp tests/runner-browser.html build/runner-web/index.html
+
+bin/square build/test_square build/test_square_ui build/square_native_digest: include/constellation_runner.h
 
 bin/square: src/square_sdl.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | bin
 	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/square_sdl.c $(SQUARE_SOURCES) $(SDL_LIBS) -o $@
@@ -121,9 +145,13 @@ build/test_square_ui: tests/test_square_ui.c src/square_sdl.c $(SQUARE_SOURCES) 
 square: bin/square $(SQUARE_ROMS)
 	./bin/square
 
-square-check: bin/square build/test_square build/test_square_ui $(SQUARE_ROMS)
+build/test_square_startup: tests/test_square_startup.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_runner.h include/constellation_routes.h include/uxn.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_square_startup.c $(RUNNER_SOURCES) -o $@
+
+square-check: bin/square build/test_square build/test_square_ui build/test_square_startup $(SQUARE_ROMS)
 	./build/test_square
 	./build/test_square_ui
+	./build/test_square_startup
 	SDL_VIDEODRIVER=dummy ./bin/square --script NNEE.SW --verify-replay --screenshot build/square.bmp
 
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c

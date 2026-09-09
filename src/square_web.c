@@ -18,7 +18,7 @@ EXPORT int no_escape_input(int action)
 EXPORT int no_escape_input_ready(void)
 {
 	return session.live && !session.play && !session.sealed && !session.failed &&
-		session.live->links[0].queue.count < CONSTELLATION_QUEUE_CAPACITY;
+		session.live->runner.host.links[0].queue.count < CONSTELLATION_QUEUE_CAPACITY;
 }
 EXPORT int no_escape_step(void)
 {
@@ -51,21 +51,21 @@ EXPORT const char *no_escape_digest(void)
 		for(unsigned j = 0; j < e->message.length; j++) hash_byte(&trace, e->message.data[j]);
 	}
 	for(unsigned i = 0; i < 3; i++) {
-		const RoutedNode *n = &m->nodes[i];
+		const RoutedNode *n = &m->runner.host.nodes[i];
 		for(unsigned j = 0; j < sizeof(n->uxn.ram); j++) hash_byte(&state, n->uxn.ram[j]);
 		for(unsigned j = 0; j < sizeof(n->uxn.devices); j++) hash_byte(&state, n->uxn.devices[j]);
 		for(unsigned j = 0; j < UXN_STACK_SIZE; j++) { hash_byte(&state, n->uxn.working.data[j]); hash_byte(&state, n->uxn.return_stack.data[j]); }
 		hash_number(&state, n->uxn.working.pointer); hash_number(&state, n->uxn.return_stack.pointer);
 		hash_number(&state, n->uxn.instructions); hash_number(&state, n->next_incoming); hash_number(&state, n->next_writable);
 		hash_number(&state, n->prefer_receive); hash_number(&state, n->source); hash_number(&state, n->writable);
-		const RoutedLink *l = &m->links[i];
+		const RoutedLink *l = &m->runner.host.links[i];
 		hash_number(&state, l->waiting); hash_number(&state, l->queue.head); hash_number(&state, l->queue.count);
 		for(unsigned j = 0; j < CONSTELLATION_QUEUE_CAPACITY; j++) {
 			const ConstellationMessage *message = &l->queue.messages[j]; hash_byte(&state, message->length);
 			for(unsigned k = 0; k < CONSTELLATION_MESSAGE_MAX; k++) hash_byte(&state, message->data[k]);
 		}
 	}
-	hash_number(&state, m->host.next_node); hash_number(&state, m->host.trace_sequence); hash_number(&state, m->frames);
+	hash_number(&state, m->runner.host.next_node); hash_number(&state, m->runner.host.trace_sequence); hash_number(&state, m->frames);
 	for(unsigned i = 0; i < SQUARE_WIDTH * SQUARE_HEIGHT; i++) hash_number(&pixels, m->pixels[i]);
 	snprintf(text, sizeof(text), "%u %zu %zu %u %016" PRIx64 " %016" PRIx64 " %016" PRIx64,
 		no_escape_turn(), session.input_count, session.event_count, no_escape_flags(), trace, state, pixels);

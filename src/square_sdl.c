@@ -120,7 +120,7 @@ main(int argc, char **argv)
 		if(image_path && (!draw(renderer, texture, s) || !screenshot(renderer, image_path))) goto done;
 	}
 	printf("Square: turn=%u inputs=%zu rejected=%u events=%zu position=%u,%u replay=%s\n", s->turn, s->input_count, s->rejected,
-		s->event_count, s->live->nodes[1].uxn.ram[0], s->live->nodes[1].uxn.ram[1], s->replay_done ? "verified" : "not requested");
+		s->event_count, s->live->runner.host.nodes[1].uxn.ram[0], s->live->runner.host.nodes[1].uxn.ram[1], s->replay_done ? "verified" : "not requested");
 	ok = true;
 done:
 	if(!ok) fprintf(stderr, "Square: %s %s\n", s && s->error[0] ? s->error : "Could not start or draw.", SDL_GetError());

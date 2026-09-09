@@ -122,6 +122,12 @@ keys move a square through three ROMs, `R` replays the recorded session, and
 `N` starts over. See [Square demo](docs/SQUARE-DEMO.md); `make square-check`
 checks movement, pixels, window controls, and exact replay.
 
+The demo uses a [shared application runner](docs/CONSTELLATION-RUNNER.md):
+an in-memory declaration of ROMs, routes, optional device attachments and an
+instruction ceiling, without prescribed game roles. `make runner-check`
+checks branching/reordered applications and startup failures;
+`make runner-web-check` repeats the behavior/diagnostic suite in WebAssembly.
+
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.

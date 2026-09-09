@@ -21,7 +21,7 @@ turns(SquareSession *s, unsigned count)
 static void
 position(SquareSession *s, unsigned x, unsigned y)
 {
-	CHECK(s->live->nodes[1].uxn.ram[0] == x && s->live->nodes[1].uxn.ram[1] == y);
+	CHECK(s->live->runner.host.nodes[1].uxn.ram[0] == x && s->live->runner.host.nodes[1].uxn.ram[1] == y);
 	for(unsigned row = 0; row < SQUARE_HEIGHT; row++) for(unsigned col = 0; col < SQUARE_WIDTH; col++) {
 		bool inside = col >= x * 8 && col < x * 8 + 8 && row >= y * 8 && row < y * 8 + 8;
 		CHECK(s->live->pixels[row * SQUARE_WIDTH + col] == (inside ? 0xffdc5c36 : 0xfff4f1e9));
@@ -56,7 +56,7 @@ int main(void)
 	CHECK(s->inputs[4].result == ROUTED_INPUT_FULL); turns(s, 30); position(s, 12, 6); replay(s);
 	square_free(s); free(s);
 	/* Freeze/replay with input still queued, including at boundary zero. */
-	s = fresh(); CHECK(square_input(s, 1)); replay(s); CHECK(s->live->links[0].queue.count == 1);
+	s = fresh(); CHECK(square_input(s, 1)); replay(s); CHECK(s->live->runner.host.links[0].queue.count == 1);
 	square_free(s); free(s);
 	/* A trace mutation must fail verification instead of claiming success. */
 	s = fresh(); CHECK(square_input(s, 2)); turns(s, 6);

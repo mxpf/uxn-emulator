@@ -22,7 +22,7 @@ int main(void)
 	key(s, SDLK_UP, false, &quit); key(s, SDLK_RIGHT, true, &quit);
 	CHECK(s->input_count == 2 && s->inputs[0].action == 1 && s->inputs[1].action == 2);
 	for(unsigned i = 0; i < 6; i++) CHECK(square_step(s));
-	CHECK(s->live->nodes[1].uxn.ram[0] == 9 && s->live->nodes[1].uxn.ram[1] == 5);
+	CHECK(s->live->runner.host.nodes[1].uxn.ram[0] == 9 && s->live->runner.host.nodes[1].uxn.ram[1] == 5);
 	key(s, SDLK_r, false, &quit); CHECK(s->play && s->sealed);
 	key(s, SDLK_DOWN, false, &quit); CHECK(s->input_count == 2);
 	while(!s->replay_done) CHECK(square_replay_step(s));

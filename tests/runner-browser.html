@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Constellation runner checks</title>
+<body><h1>Constellation runner checks</h1><pre id="result"></pre>
+<script>
+var Module = {
+  print: line => { document.querySelector('#result').textContent += line + '\n'; },
+  printErr: line => { document.querySelector('#result').textContent += 'ERROR: ' + line + '\n'; }
+};
+</script>
+<script src="check.js"></script></body></html>

@@ -1,16 +1,12 @@
 #ifndef SQUARE_DEMO_H
 #define SQUARE_DEMO_H
-#include "constellation_routes.h"
+#include "constellation_runner.h"
 
 enum { SQUARE_WIDTH = 128, SQUARE_HEIGHT = 96, SQUARE_INPUTS = 1024,
 	SQUARE_EVENTS = 16384, SQUARE_TURNS = 8192 };
 typedef struct {
-	RoutedHost host;
-	RoutedNode nodes[3];
-	RoutedLink links[3];
+	ConstellationRunner runner;
 	uint32_t pixels[SQUARE_WIDTH * SQUARE_HEIGHT];
-	UxnDeviceWrite routed_write;
-	void *routed_context;
 	unsigned frames;
 	bool failed;
 } SquareMachine;
