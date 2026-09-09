@@ -3,51 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#e9e5d9">
-  <meta name="description" content="Small games. Good company. A growing collection of tiny, open-source games you can play in your browser.">
-  <title>Playinghaus — Small games. Good company.</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Tiny Neighbors is a small browser-game prototype. Walk around a garden and greet a creature.">
+  <title>Playinghaus — Tiny Neighbors</title>
   <link rel="stylesheet" href="home.css">
 </head>
 <body>
-  <a class="skip" href="#library">Skip to games</a>
+  <a class="skip" href="#game">Skip to game</a>
   <div class="page">
     <header class="masthead">
-      <a class="brand" href="./" aria-label="Playinghaus home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>playinghaus</a>
-      <nav aria-label="Main navigation"><a href="#library">Games <span>01</span></a><a href="#about">About</a><a href="https://github.com/mxpf/uxn-emulator/tree/constellation-game">Source ↗</a></nav>
+      <a class="brand" href="./" aria-label="Playinghaus home">
+        <img src="playinghaus-chrome.png" width="1942" height="809" alt="Playinghaus">
+      </a>
     </header>
-    <main>
-      <section class="intro" aria-labelledby="welcome">
-        <div><p class="eyebrow">An independent little play system</p><h1 id="welcome">Small games.<br>Good company.</h1></div>
-        <p class="intro-note">A little curiosity. A few buttons.<br>Somewhere nice to spend a while.</p>
-      </section>
-      <section class="console" id="library" aria-labelledby="library-heading">
-        <div class="case-top"><h2 id="library-heading">Playinghaus <span>Home entertainment system</span></h2><span class="model">PH—01</span></div>
-        <div class="bezel"><div class="screen">
-          <div class="screen-top"><span><span class="square" aria-hidden="true"></span> Game library</span><span>01 title available</span></div>
-          <article class="featured" aria-labelledby="game-title">
-            <div class="game-copy">
-              <p class="game-number">No. 001 / A small encounter</p>
-              <h3 id="game-title">TINY<br>NEIGHBORS<span class="cursor" aria-hidden="true">_</span></h3>
-              <p class="game-description">Wander a little garden.<br>Find a golden creature.<br>Make a new friend.</p>
-              <div class="tags"><span>1 player</span><span>Keyboard / touch</span></div>
-              <a class="start" href="tiny-neighbors/"><span aria-hidden="true">▶</span> Start game <span class="start-arrow" aria-hidden="true">↗</span></a>
-              <p class="no-install">No install. No account. Just play.</p>
-            </div>
-            <figure class="box-cover">
-              <img src="tiny-neighbors-cover.png" width="1024" height="1536" fetchpriority="high" alt="Tiny Neighbors vintage-style painted cover: a coral-clothed wanderer befriends a golden, pointed-ear creature beside a sunlit garden pond. Small world. New friend.">
-            </figure>
-          </article>
-          <div class="screen-bottom"><span>Made of two tiny ROMs.</span><span>A whole little world.</span></div>
-        </div></div>
-        <div class="case-bottom"><div class="power"><span class="power-light" aria-hidden="true"></span><span>Ready to play</span></div><div class="case-caption">Simple machines. Room for imagination.</div><div class="vents" aria-hidden="true"></div></div>
-      </section>
-      <section class="about" id="about" aria-labelledby="about-heading">
-        <div><p class="eyebrow">A smaller kind of game machine</p><h2 id="about-heading">Less machinery.<br>More imagination.</h2></div>
-        <div class="about-copy"><p>Playinghaus is a home for small, thoughtful games. The kind you can open, understand, and make your own.</p><p>We’re starting with one little garden, built from two cooperating Uxn ROMs. The games run on your device. The code is open. The collection has room to grow.</p><a class="text-link" href="https://github.com/mxpf/uxn-emulator/tree/constellation-game">Look inside the machine <span aria-hidden="true">↗</span></a></div>
-      </section>
-      <div class="principles" aria-label="Our principles"><span><b>01</b> Small by design</span><span><b>02</b> Yours to explore</span><span><b>03</b> No ads. No tracking.</span></div>
+    <main id="game">
+      <article class="featured" aria-labelledby="game-title">
+        <a class="cartridge-link" href="tiny-neighbors/" aria-label="Play Tiny Neighbors">
+          <img class="cartridge" src="tiny-neighbors-cartridge.png" width="1122" height="1402" fetchpriority="high" alt="Tiny Neighbors cartridge with the painted garden cover.">
+        </a>
+        <div class="game-copy">
+          <h1 id="game-title">Tiny Neighbors</h1>
+          <p>A small prototype. Walk around a garden and greet a creature. That’s it for now.</p>
+          <a class="start" href="tiny-neighbors/">Start game <span aria-hidden="true">↗</span></a>
+        </div>
+      </article>
     </main>
-    <footer><span>Playinghaus <span class="footer-year">/ Est. 2026</span></span><a href="https://keeping.haus/">Part of the Keepinghaus family ↗</a><span class="end-note">Have a little fun.</span></footer>
   </div>
 </body>
 </html>
