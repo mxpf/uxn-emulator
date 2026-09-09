@@ -400,3 +400,39 @@ also passes AddressSanitizer and UndefinedBehaviorSanitizer.
 This is an in-memory input boundary and recording experiment, not a portable
 saved-replay format, real keyboard/controller adapter, browser implementation,
 or guarantee that arbitrary external input rates can be absorbed.
+
+### Independent playback of a completed recording
+
+The input suite also finishes a capture before constructing any playback
+host. Only the capture function knows the synthetic source schedule. It
+returns a completed input log, an ending turn, and an expected event archive;
+the final capture host is kept separately for comparison after playback.
+The playback driver uses only the log's turn boundaries and ending turn to
+schedule execution. Expected events are an oracle, never a source of timing.
+
+This fixture records 14 attempts over 1,024 turns: 12 admitted inputs and two
+full rejections. After the internal tokens finish, the host remains quiescent
+for 780 consecutive turns before input at boundary 1,000 makes work ready
+again. A release follows at boundary 1,006. Playback preserves both that long
+idle gap and the trailing idle turns through the recorded end, rather than
+treating quiescence as end-of-input.
+
+On the local 2026-09-09 run, three independent playbacks consuming trace every
+1, 7, or 13 turns reproduced all 2,257 events byte for byte, every submission
+result, and the full final guest memory, stacks, devices, queues, instruction
+counts, and scheduler state. The protocol model additionally checks each
+consumed batch against its guest/message expectations. The earlier paired
+test still provides per-turn state comparison.
+
+Two negative cases verify that recorded timing matters:
+
+- Moving the same input from boundary 64 to 67 keeps admission results valid
+  but diverges from the original trace at zero-based event 187.
+- Moving the successful retry from boundary 4 to 1 makes it arrive before
+  capacity is freed; both the trace and recorded admission results differ.
+
+The test archive is explicitly limited to 32 one-byte input records and
+4,096 expected events, allocated by the harness. This is not additional host
+storage, a general-purpose playback API, or a serialized replay format. No
+emulator or guest-ROM change was needed. The expanded input suite also passes
+AddressSanitizer and UndefinedBehaviorSanitizer.

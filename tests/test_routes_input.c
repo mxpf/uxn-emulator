@@ -260,11 +260,147 @@ test_recorded_input(bool changed)
 	free(a); free(b); return result;
 }
 
+enum { ARCHIVE_EVENTS = 4096, CAPTURE_END = 1024 };
+typedef struct {
+	Input inputs[LOG_CAPACITY];
+	unsigned input_count, end_turn, longest_idle;
+	size_t event_count;
+	RoutedEvent events[ARCHIVE_EVENTS];
+} Recording;
+
+static void
+initial_model(Model *model)
+{
+	memset(model, 0, sizeof(*model));
+	for(unsigned i = 0; i < 3; i++) {
+		model->send_pending[i] = true;
+		model->next_send[i].length = 2; model->next_send[i].data[0] = 64;
+	}
+}
+
+/* Only this capture function knows the synthetic source schedule. Return the
+ * finished host separately: the playback driver cannot read it or the source. */
+static Fixture *
+capture_completed(Recording *record)
+{
+	const Input source[] = {{0,7,1,0}, {0,7,0,0}, {0,7,2,0}, {0,7,0,0}, {0,7,4,ROUTED_INPUT_FULL},
+		{1,7,4,ROUTED_INPUT_FULL}, {4,7,4,0}, {10,7,0,0}, {16,7,8,0}, {32,7,0,0},
+		{64,7,1,0}, {100,7,0,0}, {1000,7,16,0}, {1006,7,0,0}};
+	Fixture *f = fresh(true); Model model; initial_model(&model);
+	CHECK(routed_boot(&f->host));
+	unsigned consecutive_idle = 0;
+	for(unsigned turn = 0; turn <= CAPTURE_END; turn++) {
+		while(record->input_count < sizeof(source) / sizeof(*source) && source[record->input_count].after_turn == turn) {
+			CHECK(record->input_count < LOG_CAPACITY);
+			unsigned i = record->input_count++;
+			record->inputs[i] = source[i]; Input *input = &record->inputs[i];
+			if(turn == 1000) CHECK(routed_quiescent(&f->host));
+			input->result = routed_input(&f->host, input->selector, &input->value, 1);
+			CHECK(input->result == source[i].result);
+			if(turn == 1000) CHECK(!routed_quiescent(&f->host));
+		}
+		RoutedEvent batch[TRACE]; size_t count;
+		CHECK(routed_take_trace(&f->host, batch, TRACE, &count)); observe(&model, f, batch, count);
+		CHECK(record->event_count + count <= ARCHIVE_EVENTS);
+		memcpy(record->events + record->event_count, batch, count * sizeof(*batch)); record->event_count += count;
+		if(turn == CAPTURE_END) break;
+		if(routed_quiescent(&f->host)) consecutive_idle++; else consecutive_idle = 0;
+		if(consecutive_idle > record->longest_idle) record->longest_idle = consecutive_idle;
+		CHECK(routed_step(&f->host));
+	}
+	record->end_turn = CAPTURE_END;
+	CHECK(record->input_count == 14 && record->longest_idle == 780);
+	CHECK(model.full == 2 && model.accepted == 12 && model.delivered == 12);
+	CHECK(model.events == record->event_count && routed_quiescent(&f->host));
+	return f;
+}
+
+typedef struct {
+	Fixture *final;
+	bool trace_matches, results_match;
+	size_t first_mismatch;
+} Playback;
+
+/* Start from a completed input log. Neither the capture clock nor a live
+ * producer is available. Expected events are only an oracle, never a driver. */
+static Playback
+play_completed(const Recording *record, unsigned consume_every)
+{
+	CHECK(consume_every > 0 && record->input_count <= LOG_CAPACITY);
+	for(unsigned i = 0; i < record->input_count; i++) {
+		CHECK(record->inputs[i].after_turn <= record->end_turn);
+		if(i) CHECK(record->inputs[i - 1].after_turn <= record->inputs[i].after_turn);
+	}
+	Playback result = {.final = fresh(true), .trace_matches = true, .results_match = true, .first_mismatch = SIZE_MAX};
+	Fixture *f = result.final; Model model; initial_model(&model);
+	CHECK(routed_boot(&f->host));
+	unsigned next_input = 0; size_t offset = 0;
+	for(unsigned turn = 0; turn <= record->end_turn; turn++) {
+		while(next_input < record->input_count && record->inputs[next_input].after_turn == turn) {
+			const Input *input = &record->inputs[next_input++];
+			RoutedInputResult status = routed_input(&f->host, input->selector, &input->value, 1);
+			CHECK(status == ROUTED_INPUT_ACCEPTED || status == ROUTED_INPUT_FULL);
+			if(status != input->result) result.results_match = false;
+		}
+		if(turn % consume_every == 0 || turn == record->end_turn) {
+			RoutedEvent batch[TRACE]; size_t count;
+			CHECK(routed_take_trace(&f->host, batch, TRACE, &count)); observe(&model, f, batch, count);
+			for(size_t i = 0; i < count; i++) {
+				if(offset + i >= record->event_count || memcmp(&batch[i], &record->events[offset + i], sizeof(batch[i])) != 0) {
+					result.trace_matches = false;
+					if(result.first_mismatch == SIZE_MAX) result.first_mismatch = offset + i;
+				}
+			}
+			offset += count;
+		}
+		if(turn == record->end_turn) break;
+		/* Quiescence is not end-of-recording: preserve idle turns and late input. */
+		CHECK(routed_step(&f->host));
+	}
+	if(offset != record->event_count) {
+		result.trace_matches = false;
+		if(result.first_mismatch == SIZE_MAX) result.first_mismatch = offset;
+	}
+	CHECK(next_input == record->input_count && f->host.trace_count == 0);
+	CHECK(model.events == f->host.trace_sequence && routed_quiescent(&f->host));
+	return result;
+}
+
+static void
+test_independent_playback(void)
+{
+	Recording *record = calloc(1, sizeof(*record)); CHECK(record != NULL);
+	Fixture *captured = capture_completed(record); /* Capture returns before playback even exists. */
+	const unsigned cadences[] = {1, 7, 13};
+	for(unsigned i = 0; i < sizeof(cadences) / sizeof(*cadences); i++) {
+		Playback played = play_completed(record, cadences[i]);
+		CHECK(played.trace_matches && played.results_match && played.first_mismatch == SIZE_MAX);
+		same(captured, played.final, true); free(played.final);
+	}
+	printf("Independent playback: %u turns, %zu exact events, %u recorded attempts, %u consecutive idle turns; final full state matches at trace cadences 1/7/13.\n",
+		record->end_turn, record->event_count, record->input_count, record->longest_idle);
+	/* Same bytes/order, changed timing: detect divergence from the original
+	 * evidence even when every recorded admission result remains valid. */
+	record->inputs[10].after_turn = 67; /* Originally 64. */
+	Playback shifted = play_completed(record, 7);
+	CHECK(!shifted.trace_matches && shifted.results_match && shifted.first_mismatch != SIZE_MAX);
+	printf("Shifted input timing detected at event %zu; admissions still match.\n", shifted.first_mismatch);
+	free(shifted.final); record->inputs[10].after_turn = 64;
+	/* Moving the successful retry before capacity is freed must also expose
+	 * an admission-result mismatch, not silently replay only admitted inputs. */
+	record->inputs[6].after_turn = 1; /* Originally 4; preceding record is also at 1. */
+	Playback premature = play_completed(record, 13);
+	CHECK(!premature.trace_matches && !premature.results_match);
+	printf("Premature retry detected: recorded admission no longer matches.\n");
+	free(premature.final); free(captured); free(record);
+}
+
 int main(void)
 {
 	test_boundary(); test_trace_exhaustion();
 	uint8_t original = test_recorded_input(false), changed = test_recorded_input(true);
 	CHECK(original != changed);
+	test_independent_playback();
 	printf("%u external-input checks passed\n", checks);
 	return 0;
 }
