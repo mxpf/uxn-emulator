@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
+const {sizes,checkViewport,checkTypography} = require('./viewport_fit_check.cjs');
 const call = (...args) => execFileSync('agent-browser', ['--session','sketch-verify',...args], {encoding:'utf8'});
 const evaluate = code => {
   const answer = JSON.parse(call('eval',code,'--json'));
@@ -16,7 +17,8 @@ try {
   call('open',url);
   call('wait','--fn','document.querySelector("#status").textContent.includes("Move only")');
   call('snapshot','-i');
-  for (const [width,height] of [[320,568],[390,844],[760,900],[1440,1000]]) {
+  checkTypography(evaluate);
+  for (const [width,height] of sizes) {
     call('set','viewport',String(width),String(height));
     const layout = evaluate(`(() => {
       const c=document.querySelector('canvas').getBoundingClientRect();
@@ -24,8 +26,8 @@ try {
         targets:[...document.querySelectorAll('button')].every(b=>b.getBoundingClientRect().width>=44 && b.getBoundingClientRect().height>=44)};
     })()`);
     assert.equal(layout.overflow,false); assert.equal(layout.targets,true);
-    assert.equal(layout.height,layout.width*.75);
-    if(width<=600) assert.equal(layout.width,width);
+    checkViewport(evaluate,width,height);
+    if(width===390) assert.equal(layout.width,width);
     if(width===390 || width===1440) call('screenshot',`build/sketch-${width}.png`,'--full');
   }
   call('set','viewport','390','844');
@@ -94,5 +96,5 @@ try {
   assert.equal(evaluate('location.pathname'),new URL('../',url).pathname);
   assert.equal(evaluate(`document.querySelector('a[href="sketchpad/"]').getAttribute('aria-label')`),'Open Sketchpad');
   const errors=JSON.parse(call('errors','--json')); assert.equal(errors.success,true); assert.deepEqual(errors.data.errors,[]);
-  console.log('Sketch browser passed: 287 full-pixel and toggle-state reference checks, draw/erase trails, toggle-off, mutually exclusive modes, keyboard/touch buttons, edge clamping, ignored repeats, native keyboard button activation, tactile depression and four responsive widths; no page errors.');
+  console.log('Sketch browser passed: 287 full-pixel and toggle-state reference checks, draw/erase trails, toggle-off, mutually exclusive modes, keyboard/touch buttons, edge clamping, ignored repeats, native keyboard button activation, tactile depression and 11 viewport sizes without scrolling or overlapping controls; no page errors.');
 } finally { call('close'); }

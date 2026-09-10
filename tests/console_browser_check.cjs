@@ -1,6 +1,7 @@
 /* Shared console layout and real browser input for both published games. */
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
+const {sizes,checkViewport,checkTypography} = require('./viewport_fit_check.cjs');
 const root = process.argv[2] || 'http://127.0.0.1:8766/';
 const call = (...args) => execFileSync('agent-browser', ['--session','console-check',...args], {encoding:'utf8'});
 const evaluate = source => {
@@ -21,7 +22,8 @@ try {
     call('open',new URL(route,root).href);
     call('wait','--load','networkidle');
     call('snapshot','-i');
-    for(const [width,height] of [[320,568],[390,844],[760,900],[1440,1000]]) {
+    checkTypography(evaluate);
+    for(const [width,height] of sizes) {
       call('set','viewport',String(width),String(height));
       call('eval','scrollTo(0,0)');
       const layout=evaluate(`(() => {
@@ -31,7 +33,9 @@ try {
           backBottom:b.bottom,pageHeight:document.documentElement.scrollHeight,
           targets:[...document.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().width).every(b=>b.getBoundingClientRect().height>=44)};
       })()`);
-      assert.deepEqual([layout.x,layout.y,layout.width,layout.height],[0,0,width,width*.75]);
+      checkViewport(evaluate,width,height);
+      if(height>500) assert.equal(layout.y,0);
+      if(width===390) assert.equal(layout.width,width);
       assert.equal(layout.overflow,false);
       assert.equal(layout.targets,true);
       assert.ok(Math.abs(layout.backBottom-layout.pageHeight)<1);
@@ -93,5 +97,5 @@ try {
   }
   const errors=JSON.parse(call('errors','--json'));
   assert.equal(errors.success,true);assert.deepEqual(errors.data.errors,[]);
-  console.log('Both console interfaces passed: four widths, flush full-width 4:3 screen, mobile/desktop controls, bottom back navigation, 44px targets, real press/release depression; No Escape! touch/keyboard movement, exact canvas pixels, replay, reset, blur/pause, same-frame bursts and delayed frames without rejected moves; no page errors.');
+  console.log('Both console interfaces passed: 11 viewport sizes without scrolling or overlapping controls, undistorted 4:3 screen, mobile/desktop controls, bottom back navigation, 44px targets, real press/release depression; No Escape! touch/keyboard movement, exact canvas pixels, replay, reset, blur/pause, same-frame bursts and delayed frames without rejected moves; no page errors.');
 } finally {call('close');}

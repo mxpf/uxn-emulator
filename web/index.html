@@ -6,27 +6,43 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="Small games and playful tools for your browser. Tiny Neighbors, No Escape! and Sketchpad.">
   <title>Playinghaus</title>
-  <link rel="stylesheet" href="home.css">
+  <link rel="preload" href="fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts.css?v=orbitron-1">
+  <link rel="stylesheet" href="home.css?v=orbitron-1">
+  <script defer src="home.js?v=carousel-1"></script>
 </head>
 <body>
   <a class="skip" href="#game">Skip to cartridges</a>
   <div class="page">
     <header class="masthead">
       <a class="brand" href="./" aria-label="Playinghaus home">
-        <img src="playinghaus-chrome.png" width="1942" height="809" alt="Playinghaus">
+        <img src="playinghaus-chrome-arc.png" width="1942" height="809" alt="Playinghaus">
       </a>
     </header>
     <main id="game" class="game">
       <h1 class="sr-only">Playinghaus games and tools</h1>
+      <section class="carousel" aria-label="Cartridges" aria-roledescription="carousel">
+      <div class="carousel-window">
+      <div class="cartridge-track">
       <a class="cartridge-link" href="tiny-neighbors/" aria-label="Play Tiny Neighbors">
         <img class="cartridge" src="tiny-neighbors-cartridge.png" width="1122" height="1402" fetchpriority="high" alt="Tiny Neighbors cartridge with a cream Constellation logo and painted garden cover.">
       </a>
       <a class="cartridge-link" href="no-escape/" aria-label="Play No Escape!">
-        <img class="cartridge" src="no-escape-cartridge.png" width="1122" height="1402" loading="lazy" alt="No Escape! cartridge with a cream Constellation logo and an inmate in orange inside an enclosed arena.">
+        <img class="cartridge" src="no-escape-cartridge.png" width="1122" height="1402" alt="No Escape! cartridge with a cream Constellation logo and an inmate in orange inside an enclosed arena.">
       </a>
       <a class="cartridge-link" href="sketchpad/" aria-label="Open Sketchpad">
-        <img class="cartridge" src="sketchpad-cartridge.png" width="1122" height="1402" loading="lazy" alt="Sketchpad cartridge with a cream Constellation logo, teal label, and a pencil drawing pixel shapes beside an eraser.">
+        <img class="cartridge" src="sketchpad-cartridge.png" width="1122" height="1402" alt="Sketchpad cartridge with a cream Constellation logo, teal label, and a pencil drawing pixel shapes beside an eraser.">
       </a>
+      </div>
+      </div>
+      <div class="carousel-controls" hidden>
+        <button class="previous" type="button" aria-label="Previous cartridge">←</button>
+        <span class="position" aria-hidden="true">1 / 3</span>
+        <button class="next" type="button" aria-label="Next cartridge">→</button>
+        <button class="rotation" type="button" aria-label="Pause automatic movement" hidden>Ⅱ</button>
+      </div>
+      <p class="sr-only carousel-status" role="status" aria-live="polite" aria-atomic="true"></p>
+      </section>
     </main>
   </div>
 </body>

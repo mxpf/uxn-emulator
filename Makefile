@@ -179,7 +179,7 @@ sketch-check: build/test_sketch bin/sketchpad build/sketchpad.rom
 	SDL_VIDEODRIVER=dummy ./bin/sketchpad --script 525364
 
 # Build the same application at its public relative path.
-sketch-web: build/sketchpad.rom
+sketch-web: build/sketchpad.rom web-fonts
 	mkdir -p build/web/sketchpad
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/sketch_web.c $(SKETCH_SOURCES) --no-entry \
 		-sMODULARIZE=1 -sEXPORT_NAME=createSketch -sSTACK_SIZE=262144 \
@@ -201,7 +201,7 @@ GARDEN_ROMS := build/garden-view.rom build/garden-world.rom
 EMCC ?= emcc
 
 .PHONY: square-web playing-web
-square-web: $(SQUARE_ROMS)
+square-web: $(SQUARE_ROMS) web-fonts
 	mkdir -p build/web/no-escape
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/square_web.c $(SQUARE_SOURCES) --no-entry \
 		-sMODULARIZE=1 -sEXPORT_NAME=createNoEscape -sSTACK_SIZE=262144 \
@@ -214,6 +214,12 @@ square-web: $(SQUARE_ROMS)
 
 playing-web: garden-web square-web sketch-web
 
+.PHONY: web-fonts
+web-fonts:
+	mkdir -p build/web/fonts
+	cp web/fonts.css build/web/
+	cp web/fonts/orbitron-latin.woff2 web/fonts/OFL-Orbitron.txt build/web/fonts/
+
 build/square_native_digest: tests/square_native_digest.c src/square_web.c $(SQUARE_SOURCES) include/square_demo.h include/constellation_routes.h include/constellation.h include/uxn.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/square_native_digest.c $(SQUARE_SOURCES) -o $@
 
@@ -223,14 +229,14 @@ square-web-check: square-web build/square_native_digest
 	node tests/square_controls.cjs
 
 .PHONY: garden-web garden-web-check garden-measure
-garden-web: $(GARDEN_ROMS)
+garden-web: $(GARDEN_ROMS) web-fonts
 	mkdir -p build/web
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/garden_web.c $(GARDEN_SOURCES) --no-entry \
 		-sMODULARIZE=1 -sEXPORT_NAME=createGarden -sSTACK_SIZE=262144 \
 		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU8,HEAPU32 \
 		--embed-file build/garden-view.rom --embed-file build/garden-world.rom \
 		-o build/web/garden.js
-	cp web/index.html web/home.css web/tiny-neighbors-cartridge.png web/no-escape-cartridge.png web/sketchpad-cartridge.png web/playinghaus-chrome.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
+	cp web/index.html web/home.css web/home.js web/tiny-neighbors-cartridge.png web/no-escape-cartridge.png web/sketchpad-cartridge.png web/playinghaus-chrome.png web/playinghaus-chrome-arc.png web/style.css web/app.js $(GARDEN_ROMS) build/web/
 	mkdir -p build/web/tiny-neighbors
 	cp web/tiny-neighbors/index.html build/web/tiny-neighbors/
 	cp web/.nojekyll build/web/
