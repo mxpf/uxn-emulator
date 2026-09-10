@@ -45,8 +45,9 @@ edge. They are optional in the useful sense: another host can leave them out,
 and every ROM still behaves the same.
 
 Do not add a ROM library, automatic updater, account, telemetry, network
-service, or a permanent preferences system. A native application bundle may be
-useful later, but packaging must remain separate from the emulator.
+service, or a permanent preferences system. The optional native application
+bundle packages the existing host and its SDL2 library without changing Uxn or
+Varvara. Its small build script remains separate from the emulator.
 
 ## Other limits
 

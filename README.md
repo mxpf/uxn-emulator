@@ -50,6 +50,24 @@ Run a terminal ROM:
 bin/uxncli program.rom
 ```
 
+## Make a Mac app
+
+The Mac app is optional. It wraps the same emulator in a folder macOS knows
+how to open, and it includes the SDL2 library used for the window and sound.
+
+```bash
+make app
+open dist
+```
+
+Drag **Uxn Emulator** into Applications. Double-click it, then drop a `.rom`
+file onto its window. Run `make package` to create a ZIP that can be moved to
+another Mac with the same kind of processor.
+
+The app is locally signed but not notarized by Apple. After downloading it on
+another Mac, the first launch may require right-clicking the app and choosing
+**Open**.
+
 To see the whole path working, build and run the included greeting:
 
 ```bash
@@ -104,6 +122,8 @@ checks for typing, drawing, saving files, and producing sound.
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
+- [How the emulator works](docs/HOW-IT-WORKS.md) gives a simple diagram of the
+  path from a ROM to the computer.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
 - [Constellation v0](docs/CONSTELLATION-V0.md) documents the isolated two-ROM

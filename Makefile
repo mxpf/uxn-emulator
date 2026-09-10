@@ -18,10 +18,20 @@ CORE_SOURCES := src/uxn.c src/varvara.c src/varvara_screen.c \
 ROM_SOURCE := src/rom.c
 SDL_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
+MACOS_APP := dist/Uxn Emulator.app
+MACOS_ARCHIVE := dist/Uxn-Emulator-macOS-$(shell uname -m).zip
 
-.PHONY: all check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
+.PHONY: all app app-check package check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
 
 all: $(BIN) $(EMU_BIN)
+
+app: $(EMU_BIN) packaging/macos/build-app.sh packaging/macos/launch.sh packaging/macos/Info.plist assets/branding/uxn-app-icon-v1.png README.md LICENSE
+	sh ./packaging/macos/build-app.sh "$(EMU_BIN)" "$(MACOS_APP)"
+
+package: app
+	rm -f "$(MACOS_ARCHIVE)"
+	ditto -c -k --norsrc --keepParent "$(MACOS_APP)" "$(MACOS_ARCHIVE)"
+	@printf '%s\n' 'Created $(MACOS_ARCHIVE)'
 
 $(BIN): src/main.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | bin
 	$(CC) $(CPPFLAGS) $(CFLAGS) src/main.c $(ROM_SOURCE) $(CORE_SOURCES) -o $@
@@ -79,6 +89,22 @@ check: all test $(PIXEL_ROM)
 	test -s build/offline-screen.bmp
 	@printf '%s\n' 'Offline window check: pass'
 
+app-check: app $(PIXEL_ROM) | build
+	test -s "$(MACOS_APP)/Contents/Resources/UxnEmulator.icns"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$(MACOS_APP)/Contents/Info.plist")" = "UxnEmulator.icns"
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+		"$(MACOS_APP)/Contents/MacOS/Uxn Emulator" \
+		--frames 1 --screenshot build/app-wait-screen.bmp
+	test -s build/app-wait-screen.bmp
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+		"$(MACOS_APP)/Contents/MacOS/Uxn Emulator" \
+		--frames 2 --screenshot build/app-screen.bmp $(PIXEL_ROM)
+	test -s build/app-screen.bmp
+	codesign --verify --deep --strict "$(MACOS_APP)"
+	! otool -L "$(MACOS_APP)/Contents/MacOS/uxnemu" | \
+		grep -E '/(opt|usr/local)/.*libSDL2'
+	@printf '%s\n' 'macOS app check: pass'
+
 compatibility: $(BIN) $(EMU_BIN)
 	./tests/compatibility.sh
 
@@ -96,4 +122,4 @@ lesson-memory: $(LESSON_MEMORY_BIN)
 	./$(LESSON_MEMORY_BIN)
 
 clean:
-	rm -rf bin build
+	rm -rf bin build dist
