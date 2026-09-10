@@ -19,10 +19,13 @@ button { min-height: 44px; border: 1px solid #7e91a2; border-top: 3px solid #8ea
 button:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 1px 0 #0d1927; }
 button:focus-visible { outline: 3px solid #edb96c; outline-offset: 4px; }
 button:disabled { cursor: wait; opacity: .5; }
-.marks { display: grid; gap: 16px; width: 104px; }
+.marks { display: grid; gap: 16px; width: 104px; min-width: 92px; }
 .marks button[aria-pressed="true"] { background: linear-gradient(#e2ad60, #bb7a30); color: #17283b; border-color: #f1c485; box-shadow: 0 2px 0 #0d1927; }
 .marks button::after { content: "OFF"; display: block; font-size: 9px; letter-spacing: .1em; margin-top: 3px; }
 .marks button[aria-pressed="true"]::after { content: "ON"; }
+.files { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.files button { min-width: 44px; font-size: 10px; border-radius: 8px; padding: 0; }
+.files button::after { content: none; }
 .keys { text-align: center; font-size: 12px; line-height: 1.5; color: #d6dee4; margin: 8px 0; }
 footer { font-size: 10px; text-align: center; color: #b9c5ce; }
 .back { display: flex; flex-shrink: 0; align-items: center; justify-content: center; min-height: 48px; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); margin-top: 4px; color: #f4f1e9; font-size: 12px; text-underline-offset: 4px; }

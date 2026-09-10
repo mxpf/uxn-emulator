@@ -9,9 +9,9 @@
   <link rel="icon" href="data:,">
   <link rel="preload" href="../fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../fonts.css?v=orbitron-1">
-  <link rel="stylesheet" href="style.css?v=orbitron-1">
-  <script defer src="sketch.js?v=toggles-1"></script>
-  <script defer src="app.js?v=toggles-1"></script>
+  <link rel="stylesheet" href="style.css?v=documents-1">
+  <script defer src="sketch.js?v=documents-1"></script>
+  <script defer src="app.js?v=documents-1"></script>
 </head>
 <body>
 <main>
@@ -29,11 +29,16 @@
       <div class="marks" role="group" aria-label="Mark paper">
         <button data-action="5" aria-pressed="false" disabled>Draw</button>
         <button data-action="6" aria-pressed="false" disabled>Erase</button>
+        <div class="files" role="group" aria-label="Drawing files">
+          <button id="save" disabled>Save</button>
+          <button id="open" disabled>Open</button>
+        </div>
+        <input id="drawing-file" type="file" accept=".sketch" aria-label="Open drawing file" hidden>
       </div>
     </div>
     <p class="keys">Arrow keys move · Space toggles Draw · X toggles Erase</p>
     <p id="error" role="alert" hidden></p>
-    <footer>A little sheet of pixels. Nothing is saved when you leave.</footer>
+    <footer id="file-status" role="status">Save a copy before leaving. Open replaces the sheet.</footer>
     <a class="back" href="../">← Back to Playinghaus</a>
   </section>
 </main>
