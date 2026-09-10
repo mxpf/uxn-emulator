@@ -8,6 +8,10 @@ EXPORT int sketch_test_op(int op)
 	if(op >= 'A' && op <= 'F') return sketch_action((unsigned)(op - 'A' + 1));
 	if(op == '.') return sketch_step(&sketch);
 	if(op == 'x') return (int)sketch_input(&sketch, 256);
+	if(op == 'S') return sketch_export();
+	if(op == 'L') return sketch_import(SKETCH_FILE_SIZE);
+	if(op == '!') return sketch_import(SKETCH_FILE_SIZE - 1);
+	if(op == '?') { document[16] = 2; int result = sketch_import(SKETCH_FILE_SIZE); document[16] = 0; return result; }
 	return -1;
 }
 EXPORT const char *sketch_test_digest(void) { return fingerprint(&sketch); }

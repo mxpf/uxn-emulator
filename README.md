@@ -133,6 +133,10 @@ a small sheet of pixels, using its own attached display and input mapping.
 `make sketchpad` runs it natively; `make playing-web` includes it as the third
 cartridge, at `/sketchpad/`. `make sketch-check` and `make sketch-web-check` verify its
 drawing model and native/browser determinism without changing the runner.
+Sketchpad can also save and reopen an application-owned `.sketch` document,
+including drawings shared between native and browser versions. See its
+[document contract](docs/SKETCHPAD-DOCUMENT.md) for the bounded input attachment
+and validation guarantees; this does not add filesystem access to the emulator.
 
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.

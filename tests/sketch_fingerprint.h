@@ -28,6 +28,9 @@ static const char *fingerprint(const Sketchpad *s)
 	fingerprint_number(&state, h->trace_sequence); fingerprint_number(&state, h->trace_count); fingerprint_number(&state, h->fault);
 	fingerprint_number(&state, h->booted); fingerprint_number(&state, h->trace_exhausted); fingerprint_number(&state, h->ceiling);
 	fingerprint_number(&state, s->failed); fingerprint_number(&state, s->mode);
+	fingerprint_number(&state, s->importing); fingerprint_number(&state, s->incoming_offset);
+	for(size_t i = 0; i < sizeof(s->paper); i++) fingerprint_byte(&state, s->paper[i]);
+	for(size_t i = 0; i < sizeof(s->incoming); i++) fingerprint_byte(&state, s->incoming[i]);
 	for(size_t i = 0; i < sizeof(s->error); i++) fingerprint_byte(&state, (uint8_t)s->error[i]);
 	for(unsigned i = 0; i < SKETCH_WIDTH * SKETCH_HEIGHT; i++) fingerprint_number(&pixels, s->pixels[i]);
 	snprintf(text, sizeof(text), "%u,%u %" PRIu64 " %" PRIu64 " %" PRIu64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64,

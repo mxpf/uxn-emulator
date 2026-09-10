@@ -25,7 +25,17 @@ present(Uxn *u, uint8_t port, uint8_t value, void *context)
 			(col % SKETCH_SCALE == 0 || row % SKETCH_SCALE == 0 || col % SKETCH_SCALE == 3 || row % SKETCH_SCALE == 3);
 		s->pixels[row * SKETCH_WIDTH + col] = cursor ? 0xffd58b36 : ink ? 0xff20354b : 0xfff4f1e9;
 	}
+	memcpy(s->paper, u->ram + address, sizeof(s->paper));
 	s->x = x; s->y = y; s->mode = mode; s->commits++;
+}
+
+/* A bounded, read-only document stream, attached only to this app. */
+static uint8_t document_read(Uxn *u, uint8_t port, void *context)
+{
+	Sketchpad *s = context; (void)u;
+	if(port == 0x51) return s->importing;
+	return s->importing && s->incoming_offset < sizeof(s->incoming)
+		? s->incoming[s->incoming_offset++] : 0;
 }
 
 static void hash_number(uint64_t *hash, uint64_t n)
@@ -61,8 +71,8 @@ sketch_start(Sketchpad *s, RunnerRom rom)
 	if(!s || s->runner.host.nodes) return false;
 	memset(s, 0, sizeof(*s)); s->trace_digest = UINT64_C(14695981039346656037);
 	const RoutedRoute route = {ROUTED_NONE,7,0};
-	const RunnerDevice display = {0,0x44,0x44,NULL,present,s};
-	const RunnerDefinition definition = {&rom,1,&route,1,&display,1,10000};
+	const RunnerDevice devices[] = {{0,0x44,0x44,NULL,present,s}, {0,0x50,0x51,document_read,NULL,s}};
+	const RunnerDefinition definition = {&rom,1,&route,1,devices,2,10000};
 	RunnerDiagnostic diagnostic;
 	if(!runner_start(&s->runner, &definition, &diagnostic)) return fail(s, runner_diagnostic_text(&diagnostic));
 	if(!consume(s) || !s->commits) {
@@ -108,3 +118,50 @@ sketch_step(Sketchpad *s)
 bool
 sketch_apply(Sketchpad *s, unsigned action)
 { return sketch_input(s, action) == ROUTED_INPUT_ACCEPTED && sketch_step(s); }
+
+bool sketch_save(const Sketchpad *s, uint8_t *bytes, size_t length)
+{
+	if(!s || s->failed || !s->runner.host.nodes || !bytes || length != SKETCH_FILE_SIZE ||
+		s->runner.host.links[0].queue.count || s->importing) return false;
+	memset(bytes, 0, length); memcpy(bytes, "SKETCH01", 8);
+	bytes[8] = SKETCH_COLS; bytes[9] = SKETCH_ROWS;
+	bytes[10] = s->x; bytes[11] = s->y; bytes[12] = s->mode;
+	memcpy(bytes + 16, s->paper, sizeof(s->paper)); return true;
+}
+
+bool sketch_load(Sketchpad *s, const uint8_t *bytes, size_t length)
+{
+	if(!s || s->failed || !s->runner.host.nodes || !bytes || length != SKETCH_FILE_SIZE ||
+		s->runner.host.links[0].queue.count || s->importing) return false;
+	if(memcmp(bytes, "SKETCH01", 8) || bytes[8] != SKETCH_COLS || bytes[9] != SKETCH_ROWS ||
+		bytes[10] >= SKETCH_COLS || bytes[11] >= SKETCH_ROWS || bytes[12] > 2 || bytes[13] || bytes[14] || bytes[15]) return false;
+	for(size_t i = 16; i < length; i++) if(bytes[i] > 1) return false;
+	memcpy(s->incoming, bytes + 10, 3);
+	memcpy(s->incoming + 3, bytes + 16, sizeof(s->paper));
+	s->incoming_offset = 0; s->importing = true;
+	uint8_t action = 7; uint64_t commits = s->commits;
+	bool ok = routed_input(&s->runner.host, 7, &action, 1) == ROUTED_INPUT_ACCEPTED && sketch_step(s);
+	ok = ok && s->incoming_offset == sizeof(s->incoming) && s->commits == commits + 1;
+	s->importing = false; s->incoming_offset = 0; memset(s->incoming, 0, sizeof(s->incoming));
+	return ok ? true : fail(s, "Sketch ROM could not open the document.");
+}
+
+bool sketch_read_file(Sketchpad *s, const char *path)
+{
+	if(!path) return false;
+	FILE *f = fopen(path, "rb"); if(!f) return false;
+	uint8_t bytes[SKETCH_FILE_SIZE + 1]; size_t n = fread(bytes, 1, sizeof(bytes), f);
+	bool ok = !ferror(f); if(fclose(f)) ok = false;
+	return ok && sketch_load(s, bytes, n);
+}
+
+bool sketch_write_file(const Sketchpad *s, const char *path)
+{
+	uint8_t bytes[SKETCH_FILE_SIZE];
+	if(!path || !sketch_save(s, bytes, sizeof(bytes))) return false;
+	FILE *f = fopen(path, "wbx"); if(!f) return false;
+	bool ok = fwrite(bytes, 1, sizeof(bytes), f) == sizeof(bytes);
+	if(fclose(f)) ok = false;
+	if(!ok) remove(path); /* Only the new, exclusively-created incomplete file. */
+	return ok;
+}

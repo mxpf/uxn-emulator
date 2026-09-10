@@ -1,7 +1,9 @@
 ( Sketchpad-local protocol: external selector 07; 1 up, 2 right, 3 down,
   4 left, 5 toggle draw, 6 toggle erase. ZP 00/01 cursor, 02 mode:
   0 move, 1 draw, 2 erase. 1000-12ff paper, 32 x 24.
-  Display: 40-41 paper address, 42/43 cursor, 44 commit, 45 mode. )
+  Display: 40-41 paper address, 42/43 cursor, 44 commit, 45 mode.
+  Restore action 7: only while 51 reads 1; 50 streams validated
+  x, y, mode, then 768 paper bytes. No host writes to guest RAM. )
 |0100
 	;receive #d0 DEO2 #0300 #d2 DEO2
 	#1000 #40 DEO2 #10 #00 STZ #0c #01 STZ !publish
@@ -14,7 +16,14 @@
 	#0300 LDA #04 EQU ?west
 	#0300 LDA #05 EQU ?draw
 	#0300 LDA #06 EQU ?erase
+	#0300 LDA #07 EQU ?restore
 	BRK
+@restore
+	#51 DEI #01 NEQ ?done
+	#50 DEI #00 STZ #50 DEI #01 STZ #50 DEI #02 STZ
+	#1000
+	&copy DUP2 #50 DEI ROT ROT STA INC2 DUP2 #1300 LTH2 ?&copy
+	POP2 !publish
 @north #01 LDZ #00 EQU ?mark #01 LDZ #01 SUB #01 STZ !mark
 @east #00 LDZ #1f EQU ?mark #00 LDZ INC #00 STZ !mark
 @south #01 LDZ #17 EQU ?mark #01 LDZ INC #01 STZ !mark

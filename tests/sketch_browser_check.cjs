@@ -8,7 +8,7 @@ const evaluate = code => {
 };
 const cell = (x,y) => evaluate(`Array.from(document.querySelector('canvas').getContext('2d').getImageData(${x*4+1},${y*4+1},1,1).data)`);
 const mode = expected => {
-  assert.deepEqual(evaluate(`[...document.querySelectorAll('.marks button')].map(b=>b.getAttribute('aria-pressed'))`),
+  assert.deepEqual(evaluate(`[...document.querySelectorAll('.marks [data-action]')].map(b=>b.getAttribute('aria-pressed'))`),
     [String(expected===1),String(expected===2)]);
   assert.match(evaluate(`document.querySelector('#status').textContent`),[/Move only/,/Draw on/,/Erase on/][expected]);
 };

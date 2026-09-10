@@ -3,7 +3,7 @@ const {spawnSync} = require('node:child_process');
 const create = require('../build/sketch-check/sketch.js');
 const operations = '0E' + 'BE'.repeat(36) + 'CE'.repeat(28) + 'DE'.repeat(36) + 'AE'.repeat(28)
   + 'F..FEE' + '.'.repeat(80) + 'x22225....F0BECEDEAE' + 'A'.repeat(20) + 'D'.repeat(20) + 'ExF'
-  + '0EBBBECCFADDFDEEFFE';
+  + '0EBBBECCFADDFDEEFFE' + 'S0L!BLS0L?BLS0L';
 (async () => {
   const native = spawnSync('./build/sketch_probe', [], {input:operations, encoding:'utf8'});
   assert.equal(native.status, 0, native.stderr);
@@ -13,5 +13,13 @@ const operations = '0E' + 'BE'.repeat(36) + 'CE'.repeat(28) + 'DE'.repeat(36) + 
     const result = module._sketch_test_op(operations.charCodeAt(i));
     assert.equal(`${result} ${module.UTF8ToString(module._sketch_test_digest())}`, expected[i], `checkpoint ${i} (${operations[i]})`);
   }
+  // The portable file is byte-identical as well, not just a state fingerprint.
+  assert.equal(module._sketch_export(), 1);
+  const offset = module._sketch_document(), length = module._sketch_document_size();
+  const bytes = module.HEAPU8.slice(offset, offset + length);
+  assert.equal(length, 784); assert.equal(Buffer.from(bytes.slice(0,8)).toString(), 'SKETCH01');
+  assert.equal(module._sketch_reset(), 1); module.HEAPU8.set(bytes, module._sketch_document());
+  assert.equal(module._sketch_import(length), 1); assert.equal(module._sketch_export(), 1);
+  assert.deepEqual(module.HEAPU8.slice(offset, offset + length), bytes);
   console.log(`Sketchpad: ${operations.length} native/Wasm checkpoints match: full guest-state, trace and pixel fingerprints; drawing, erasing, edges, idle gaps, full queue, invalid input and reset.`);
 })().catch(e => {console.error(e); process.exitCode = 1;});

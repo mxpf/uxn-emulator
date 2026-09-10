@@ -184,7 +184,7 @@ sketch-web: build/sketchpad.rom web-fonts
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/sketch_web.c $(SKETCH_SOURCES) --no-entry \
 		-sMODULARIZE=1 -sEXPORT_NAME=createSketch -sSTACK_SIZE=262144 \
 		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
-		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32,HEAPU8 \
 		--embed-file build/sketchpad.rom -o build/web/sketchpad/sketch.js
 	cp web/sketchpad/index.html web/sketchpad/style.css web/sketchpad/app.js build/web/sketchpad/
 
@@ -193,7 +193,7 @@ sketch-web-check: sketch-web build/sketch_probe
 	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/sketch_probe.c $(SKETCH_SOURCES) --no-entry \
 		-sMODULARIZE=1 -sEXPORT_NAME=createSketch -sSTACK_SIZE=262144 \
 		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
-		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32,HEAPU8 \
 		--embed-file build/sketchpad.rom -o build/sketch-check/sketch.js
 	node tests/sketch_web_parity.cjs
 
