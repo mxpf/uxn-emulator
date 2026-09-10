@@ -1,0 +1,9 @@
+/* Google Fonts Orbitron v35, unmodified Latin variable webfont. See fonts/OFL-Orbitron.txt. */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('fonts/orbitron-latin.woff2') format('woff2');
+}
+:root { --font-ui: 'Orbitron', Arial, Helvetica, sans-serif; }

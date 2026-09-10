@@ -6,13 +6,15 @@
   <meta name="theme-color" content="#17283e">
   <meta name="description" content="A small garden running in two Uxn ROMs. Move around and greet a neighbor.">
   <title>Tiny Neighbors — Playinghaus</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="preload" href="../fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../fonts.css?v=orbitron-1">
+  <link rel="stylesheet" href="../style.css?v=orbitron-1">
   <script defer src="../garden.js"></script>
   <script defer src="../app.js"></script>
 </head>
 <body>
 <main>
-  <canvas id="garden" width="128" height="96" tabindex="0" aria-label="Tiny Neighbors. Arrow keys or WASD to move, Space to greet."></canvas>
+  <div class="screen"><canvas id="garden" width="128" height="96" tabindex="0" aria-label="Tiny Neighbors. Arrow keys or WASD to move, Space to greet."></canvas></div>
   <section class="console" aria-label="Game controls">
     <h1 class="console-heading">Tiny Neighbors</h1>
     <p id="objective" class="status" role="status">Loading…</p>

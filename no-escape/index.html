@@ -6,13 +6,15 @@
   <meta name="theme-color" content="#17283e">
   <meta name="description" content="One square. Four walls. Move around, then replay your path.">
   <title>No Escape! — Playinghaus</title>
-  <link rel="stylesheet" href="../style.css">
+  <link rel="preload" href="../fonts/orbitron-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../fonts.css?v=orbitron-1">
+  <link rel="stylesheet" href="../style.css?v=orbitron-1">
   <script defer src="no-escape.js?v=runner-1"></script>
   <script defer src="app.js?v=runner-1"></script>
 </head>
 <body>
 <main>
-  <canvas id="board" width="128" height="96" tabindex="0" aria-label="No Escape! game board. Use arrow keys to move the square."></canvas>
+  <div class="screen"><canvas id="board" width="128" height="96" tabindex="0" aria-label="No Escape! game board. Use arrow keys to move the square."></canvas></div>
   <section class="console" aria-label="Game controls">
     <h1 class="console-heading">No Escape!</h1>
     <p id="status" class="status" role="status">Loading…</p>
