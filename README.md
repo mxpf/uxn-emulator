@@ -140,6 +140,11 @@ and validation guarantees; this does not add filesystem access to the emulator.
 
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
+- [The Last Visitor reasoning study](docs/MYSTERY-OPENING.md) tests the larger
+  locked-room experiment with three accounts, six facts, a contradiction and
+  a player-built three-part conclusion across three cartridge-owned ROMs.
+  Run `make mystery` or build the private
+  browser preview with `make mystery-web`; it is not in the public collection.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.

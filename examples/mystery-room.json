@@ -1,0 +1,360 @@
+{
+  "title": "THE LAST VISITOR",
+  "messages": [
+    "THREE VISITORS. ONE FALSE ACCOUNT.\nSEALS AND RECORDS ARE GENUINE.\nWHO CAME LAST. HOW. WHAT DID THEY TAKE?\nREAD FIVE HOTSPOTS. BUILD A CONCLUSION.",
+    "ADA - ROUND SEAL:\nI LEFT AS BRAM ARRIVED.\nTHE LEDGER WAS WHOLE WHEN I LEFT.",
+    "BRAM - SQUARE SEAL:\nI GAVE THE SUN KEY TO THE NEXT GUEST.\nTHE LEDGER WAS STILL WHOLE WHEN I LEFT.",
+    "CORA - TRIANGLE SEAL:\nI NEVER ENTERED THE STUDY.\nBEHIND HER NOTE: THE BRASS SUN KEY.\nYOU KEEP THE KEY.",
+    "ENTRY ORDER: ROUND - SQUARE - TRIANGLE.\nONLY ENTRIES. A LEDGER PAGE IS MISSING.\nTHE LEDGER STUB FITS THE SCRAP FOUND IN\nTHE TRIANGLE-SEALED ENVELOPE.",
+    "DOOR: ONLY THE SUN KEY OPENS THIS LOCK.\nTHE LOCK IS INTACT. NO OTHER ENTRANCE.\nTHE WINDOW IS SEALED.\nWHO USED THE KEY LAST?",
+    "BUILD YOUR CONCLUSION WITH 6 7 AND 8.\nEACH PRESS CYCLES ONE ANSWER.\n9 TESTS ALL THREE RELATIONSHIPS.\nYOU CAN REREAD ANY NOTE.",
+    "EVIDENCE IS MISSING.\nREAD ALL FIVE HOTSPOTS FIRST.\nTHE DESK HOLDS TWO DISTINCT FACTS.",
+    "YOUR CONCLUSION IS INCOMPLETE.\nCHOOSE WHO CAME LAST. HOW THEY ENTERED.\nAND WHAT THEY TOOK. THEN PRESS 9.",
+    "THAT CONCLUSION DOES NOT FIT.\nMATCH EACH SEAL TO ITS OWNER.\nTRACE THE HANDOVER AND THE TORN STUB.\nREVISE YOUR ANSWERS AND TRY AGAIN.",
+    "CORA CAME LAST. HER DENIAL WAS FALSE.\nSQUARE PASSED THE SUN KEY TO TRIANGLE.\nHER ENVELOPE SCRAP FITS THE LEDGER STUB.\nCASE CLOSED. YOUR KEY OPENS THE DOOR."
+  ],
+  "hotspots": [
+    [
+      14,
+      36,
+      63,
+      76,
+      1
+    ],
+    [
+      136,
+      55,
+      174,
+      114,
+      2
+    ],
+    [
+      80,
+      30,
+      136,
+      114,
+      3
+    ],
+    [
+      8,
+      76,
+      80,
+      114,
+      4
+    ],
+    [
+      174,
+      26,
+      240,
+      114,
+      5
+    ]
+  ],
+  "rectangles": [
+    [
+      8,
+      26,
+      240,
+      88,
+      1
+    ],
+    [
+      8,
+      100,
+      240,
+      14,
+      3
+    ],
+    [
+      8,
+      98,
+      240,
+      2,
+      4
+    ],
+    [
+      14,
+      36,
+      48,
+      54,
+      2
+    ],
+    [
+      17,
+      39,
+      42,
+      48,
+      6
+    ],
+    [
+      20,
+      42,
+      36,
+      42,
+      0
+    ],
+    [
+      23,
+      45,
+      12,
+      15,
+      6
+    ],
+    [
+      40,
+      45,
+      13,
+      15,
+      6
+    ],
+    [
+      23,
+      65,
+      12,
+      15,
+      6
+    ],
+    [
+      40,
+      65,
+      13,
+      15,
+      6
+    ],
+    [
+      80,
+      32,
+      56,
+      67,
+      2
+    ],
+    [
+      84,
+      35,
+      48,
+      59,
+      4
+    ],
+    [
+      88,
+      39,
+      40,
+      51,
+      3
+    ],
+    [
+      92,
+      43,
+      32,
+      43,
+      0
+    ],
+    [
+      102,
+      48,
+      12,
+      15,
+      5
+    ],
+    [
+      100,
+      62,
+      16,
+      5,
+      3
+    ],
+    [
+      95,
+      68,
+      26,
+      18,
+      1
+    ],
+    [
+      98,
+      48,
+      4,
+      16,
+      2
+    ],
+    [
+      114,
+      48,
+      4,
+      16,
+      2
+    ],
+    [
+      178,
+      27,
+      56,
+      76,
+      2
+    ],
+    [
+      182,
+      31,
+      48,
+      71,
+      4
+    ],
+    [
+      186,
+      35,
+      40,
+      67,
+      3
+    ],
+    [
+      190,
+      39,
+      32,
+      25,
+      2
+    ],
+    [
+      190,
+      68,
+      32,
+      26,
+      2
+    ],
+    [
+      216,
+      67,
+      4,
+      4,
+      4
+    ],
+    [
+      20,
+      86,
+      52,
+      6,
+      4
+    ],
+    [
+      24,
+      92,
+      5,
+      18,
+      3
+    ],
+    [
+      63,
+      92,
+      5,
+      18,
+      3
+    ],
+    [
+      26,
+      93,
+      36,
+      9,
+      3
+    ],
+    [
+      34,
+      80,
+      25,
+      6,
+      5
+    ],
+    [
+      45,
+      80,
+      1,
+      6,
+      3
+    ],
+    [
+      30,
+      83,
+      4,
+      3,
+      3
+    ],
+    [
+      148,
+      75,
+      3,
+      23,
+      4
+    ],
+    [
+      141,
+      61,
+      18,
+      14,
+      4
+    ],
+    [
+      144,
+      57,
+      12,
+      5,
+      4
+    ],
+    [
+      142,
+      96,
+      16,
+      3,
+      3
+    ],
+    [
+      14,
+      67,
+      44,
+      9,
+      5
+    ],
+    [
+      138,
+      84,
+      34,
+      10,
+      5
+    ]
+  ],
+  "labels": [
+    "1 ADA",
+    "2 BRAM",
+    "3 CORA",
+    "4 DESK",
+    "5 DOOR"
+  ],
+  "choices": [
+    [
+      "6 LAST: ?",
+      "6 LAST: ADA",
+      "6 LAST: BRAM",
+      "6 LAST: CORA"
+    ],
+    [
+      "7 ENTRY: ?",
+      "7 ENTRY: SUN KEY",
+      "7 ENTRY: WINDOW",
+      "7 ENTRY: FORCED DOOR"
+    ],
+    [
+      "8 TOOK: ?",
+      "8 TOOK: LEDGER PAGE",
+      "8 TOOK: PORTRAIT",
+      "8 TOOK: NOTHING"
+    ]
+  ],
+  "evidenceMasks": [
+    1,
+    2,
+    4,
+    24,
+    32
+  ],
+  "solution": [
+    3,
+    1,
+    1
+  ]
+}

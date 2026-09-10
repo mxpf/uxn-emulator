@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+ <meta name="theme-color" content="#111e29"><title>The Last Visitor — reasoning study</title>
+ <link rel="icon" href="data:,"><link rel="stylesheet" href="fonts.css"><link rel="stylesheet" href="style.css">
+ <script defer src="mystery.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+ <main>
+  <header><span>CONSTELLATION / NARRATIVE STUDY 01</span><h1>The Last Visitor</h1><p>Three visitors. One false account. A missing page.</p></header>
+  <div class="screen"><canvas width="256" height="192" tabindex="0" aria-label="The locked study. Click an object, or use the labelled controls below." aria-describedby="narration"></canvas></div>
+  <section aria-label="Study controls">
+   <p id="narration" class="sr-only" role="status">Loading the study.</p>
+   <div class="actions" role="group" aria-label="Read the five hotspots">
+    <button data-action="1" disabled>1 · Ada</button><button data-action="2" disabled>2 · Bram</button>
+    <button data-action="3" disabled>3 · Cora</button><button data-action="4" disabled>4 · Desk</button>
+    <button data-action="5" disabled>5 · Door</button>
+   </div>
+   <div class="hypothesis" role="group" aria-label="Build a conclusion. Each button cycles one answer; current answers appear on screen and in the narration.">
+    <button data-action="6" disabled>6 · Who?</button><button data-action="7" disabled>7 · How?</button>
+    <button data-action="8" disabled>8 · Took what?</button><button data-action="9" disabled>9 · Conclude</button>
+   </div>
+   <p class="hint">1–5 read · 6–8 cycle answers · 9 conclude</p>
+   <div class="session"><button id="replay" disabled>Replay</button><button id="restart" disabled>Restart</button><a class="back" href="http://playing.haus/">← Back</a></div>
+   <p id="status" role="status">Loading…</p>
+  </section>
+ </main>
+</body>
+</html>

@@ -155,6 +155,54 @@ square-check: bin/square build/test_square build/test_square_ui build/test_squar
 	SDL_VIDEODRIVER=dummy ./bin/square --script NNEE.SW --verify-replay --screenshot build/square.bmp
 
 GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
+MYSTERY_SOURCES := src/mystery.c $(RUNNER_SOURCES)
+MYSTERY_ROMS := build/mystery-presentation.rom build/mystery-director.rom build/mystery-deduction.rom
+
+build/mystery-presentation.tal build/mystery-deduction.tal: examples/mystery-presentation.tal examples/mystery-deduction.tal examples/mystery-room.json tools/build_mystery.cjs | build
+	node tools/build_mystery.cjs $@
+build/mystery-deduction.rom: build/mystery-deduction.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/mystery-presentation.rom: build/mystery-presentation.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/mystery-%.rom: examples/mystery-%.tal $(ASSEMBLER_ROM) $(BIN) | build
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+bin/mystery: src/mystery_sdl.c $(MYSTERY_SOURCES) include/mystery.h | bin
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) src/mystery_sdl.c $(MYSTERY_SOURCES) $(SDL_LIBS) -o $@
+build/test_mystery: tests/test_mystery.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_mystery.c $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery mystery-check mystery-web
+mystery: bin/mystery $(MYSTERY_ROMS)
+	./bin/mystery
+mystery-check: bin/mystery build/test_mystery $(MYSTERY_ROMS)
+	./build/test_mystery
+	node tests/mystery_authoring_check.cjs
+	SDL_VIDEODRIVER=dummy ./bin/mystery --script 12345666789
+build/mystery_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/mystery_probe.c $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-web-check
+mystery-web-check: mystery-web build/mystery_probe
+	mkdir -p build/mystery-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/mystery_probe.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-presentation.rom --embed-file build/mystery-director.rom --embed-file build/mystery-deduction.rom \
+		-o build/mystery-check/mystery.js
+	node tests/mystery_web_parity.cjs
+# Deliberately outside build/web: not part of a Playinghaus release yet.
+mystery-web: $(MYSTERY_ROMS)
+	mkdir -p build/mystery-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-presentation.rom --embed-file build/mystery-director.rom --embed-file build/mystery-deduction.rom \
+		-o build/mystery-web/mystery.js
+	cp web/mystery/index.html web/mystery/style.css web/mystery/app.js build/mystery-web/
+	cp web/fonts.css build/mystery-web/
+	mkdir -p build/mystery-web/fonts
+	cp web/fonts/orbitron-latin.woff2 web/fonts/OFL-Orbitron.txt build/mystery-web/fonts/
+
 SKETCH_SOURCES := src/sketchpad.c $(RUNNER_SOURCES)
 SKETCH_HEADERS := include/sketchpad.h include/constellation_runner.h include/constellation_routes.h include/constellation.h include/uxn.h
 

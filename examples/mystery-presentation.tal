@@ -1,0 +1,62 @@
+( Presentation owns pixels, hit testing and answer display.
+  ZP 00 message, 01 facts, 02 who, 03 entry, 04 object, 05 exit.
+  External 0 x y / 1 action 0. Director reply is six bytes. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2
+ #0900 #d6 DEO2 #01 #d8 DEO #01 #dc DEO
+ !paint
+@receive
+ #dd DEI #01 EQU ?reply
+ #dd DEI #ff NEQ ?done #d4 DEI #03 NEQ ?done
+ #0800 LDA #01 EQU ?key
+ #0800 LDA #00 NEQ ?done #0802 LDA #bf GTH ?done
+ ;hotspots
+ @hit-loop DUP2 ;hotspots-end EQU2 ?hit-miss
+ DUP2 LDA #0801 LDA GTH ?hit-next
+ DUP2 #0001 ADD2 LDA #0802 LDA GTH ?hit-next
+ DUP2 #0002 ADD2 LDA #0801 LDA GTH #00 EQU ?hit-next
+ DUP2 #0003 ADD2 LDA #0802 LDA GTH #00 EQU ?hit-next
+ #0004 ADD2 LDA !send
+ @hit-next #0005 ADD2 !hit-loop
+ @hit-miss POP2 BRK
+@key
+ #0802 LDA ?done
+ #0801 LDA #01 LTH ?done #0801 LDA #09 GTH ?done
+ #0801 LDA
+@send
+ #0900 STA #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
+@done BRK
+@reply
+ #d4 DEI #06 NEQ ?done
+ #0800 LDA #0a GTH ?done #0801 LDA #3f GTH ?done
+ #0802 LDA #03 GTH ?done #0803 LDA #03 GTH ?done
+ #0804 LDA #03 GTH ?done #0805 LDA #01 GTH ?done
+ #0800 LDA2 #00 STZ2 #0802 LDA2 #02 STZ2 #0804 LDA2 #04 STZ2
+@paint
+ #00 #24 DEO #01 #25 DEO
+ ;rects
+ @paint-loop DUP2 ;rects-end EQU2 ?paint-end
+ DUP2 LDA #20 DEO INC2 DUP2 LDA #21 DEO INC2
+ DUP2 LDA #22 DEO INC2 DUP2 LDA #23 DEO INC2
+ DUP2 LDA #24 DEO INC2 #02 #25 DEO !paint-loop
+ @paint-end POP2
+ #05 LDZ #00 EQU ?closed
+ #ba #20 DEO #23 #21 DEO #28 #22 DEO #43 #23 DEO #05 #24 DEO #02 #25 DEO
+ @closed
+ #05 #24 DEO
+ #08 #20 DEO #0a #21 DEO #00 ;text JSR2
+ #04 #24 DEO
+ #10 #20 DEO #3b #21 DEO #01 ;text JSR2
+ #88 #20 DEO #64 #21 DEO #02 ;text JSR2
+ #50 #20 DEO #69 #21 DEO #03 ;text JSR2
+ #08 #20 DEO #69 #21 DEO #04 ;text JSR2
+ #b0 #20 DEO #69 #21 DEO #05 ;text JSR2
+ #05 #24 DEO #08 #20 DEO #73 #21 DEO #02 LDZ #06 ADD ;text JSR2
+ #08 #20 DEO #7d #21 DEO #03 LDZ #0a ADD ;text JSR2
+ #08 #20 DEO #87 #21 DEO #04 LDZ #0e ADD ;text JSR2
+ #04 #24 DEO #b8 #20 DEO #7d #21 DEO #12 ;text JSR2
+ #05 #24 DEO #08 #20 DEO #96 #21 DEO #00 LDZ #13 ADD ;text JSR2
+ #04 #25 DEO BRK
+@text ( index -- )
+ #00 SWP #0003 MUL2 ;texts ADD2
+ DUP2 LDA2 #26 DEO2 #0002 ADD2 LDA #28 DEO #03 #25 DEO JMP2r

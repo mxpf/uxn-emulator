@@ -1,0 +1,37 @@
+( Owns learned facts and a three-field hypothesis. No inventory or scene state.
+  ZP 00 facts, 01 who, 02 entry, 03 object, 04 verdict, fe send error.
+  Input action 1..9 from director. Reply: message facts who entry object verdict. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2
+ #0900 #d6 DEO2 #06 #d8 DEO #01 #dc DEO BRK
+@receive
+ #dd DEI #01 NEQ ?done #d4 DEI #01 NEQ ?done
+ #0800 LDA #01 LTH ?done #0800 LDA #09 GTH ?done
+ #00 #04 STZ
+ #0800 LDA #06 LTH ?observe
+ #0800 LDA #09 EQU ?test
+ ( Actions 6..8 map to ZP 01..03. Cycle unanswered -> 1 -> 2 -> 3 -> 1. )
+ #0800 LDA #05 SUB DUP LDZ INC DUP #04 NEQ ?choice
+ POP #01
+ @choice SWP STZ #06 !reply
+@observe
+ #00 #0800 LDA #01 SUB ;evidence ADD2 LDA #00 LDZ ORA #00 STZ
+ #0800 LDA !reply
+@test
+ #00 LDZ #3f NEQ ?missing
+ #01 LDZ #00 EQU ?incomplete
+ #02 LDZ #00 EQU ?incomplete
+ #03 LDZ #00 EQU ?incomplete
+ #01 LDZ ;solution LDA NEQ ?wrong
+ #02 LDZ ;solution INC2 LDA NEQ ?wrong
+ #03 LDZ ;solution #0002 ADD2 LDA NEQ ?wrong
+ #01 #04 STZ #0a !reply
+@missing #07 !reply
+@incomplete #08 !reply
+@wrong #09
+@reply
+ #0900 STA
+ #00 LDZ #0901 STA #01 LDZ #0902 STA #02 LDZ #0903 STA
+ #03 LDZ #0904 STA #04 LDZ #0905 STA
+ #06 #d9 DEO #d9 DEI ?done #01 #fe STZ
+@done BRK
