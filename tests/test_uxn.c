@@ -690,6 +690,126 @@ test_varvara_audio(void)
 }
 
 static void
+start_test_voice(Varvara *varvara, unsigned int voice, uint16_t address,
+	uint8_t volume)
+{
+	uint8_t base = (uint8_t)(0x30 + voice * 0x10);
+	host_write_short(varvara, (uint8_t)(base + 0x08), 0x0000);
+	host_write_short(varvara, (uint8_t)(base + 0x0a), 2);
+	host_write_short(varvara, (uint8_t)(base + 0x0c), address);
+	host_write_byte(varvara, (uint8_t)(base + 0x0e), volume);
+	host_write_byte(varvara, (uint8_t)(base + 0x0f), 0xbc);
+}
+
+static void
+test_varvara_audio_four_voices(void)
+{
+	Varvara varvara;
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	int16_t samples[169 * 2];
+	unsigned int voice;
+
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	for(voice = 0; voice < 4; voice++) {
+		uint8_t base = (uint8_t)(0x30 + voice * 0x10);
+		uint8_t finished;
+		unsigned int other;
+		CHECK(varvara_init(&varvara, output, errors));
+		varvara.uxn.ram[0x0700] = 0xff;
+		varvara.uxn.ram[0x0701] = 0x00;
+		start_test_voice(&varvara, voice, 0x0700, 0xff);
+		for(other = 0; other < 4; other++)
+			CHECK(varvara.voices[other].active == (other == voice));
+		finished = varvara_audio_render(&varvara, samples, 169);
+		CHECK(samples[0] == 10834);
+		CHECK(samples[1] == 10834);
+		CHECK(samples[83 * 2] == 10834);
+		CHECK(samples[83 * 2 + 1] == 10834);
+		CHECK(samples[84 * 2] == -10920);
+		CHECK(samples[84 * 2 + 1] == -10920);
+		CHECK(samples[167 * 2] == -10920);
+		CHECK(samples[167 * 2 + 1] == -10920);
+		CHECK(samples[168 * 2] == 0);
+		CHECK(samples[168 * 2 + 1] == 0);
+		CHECK(finished == (uint8_t)(1u << voice));
+		CHECK(!varvara_audio_active(&varvara));
+		CHECK(varvara.uxn.device_read(&varvara.uxn,
+			(uint8_t)(base + 0x02), &varvara) == 0);
+		CHECK(varvara.uxn.devices[base + 0x03] == 2);
+		varvara_destroy(&varvara);
+	}
+	fclose(output);
+	fclose(errors);
+}
+
+static void
+test_varvara_audio_mix_and_pan(void)
+{
+	Varvara varvara;
+	VarvaraAudioVoice voice0;
+	VarvaraAudioVoice voice1;
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	int16_t samples[169 * 2];
+	uint8_t audio0_ports[16];
+	uint8_t audio1_ports[16];
+	uint8_t finished;
+
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	CHECK(varvara_init(&varvara, output, errors));
+	varvara.uxn.ram[0x0700] = 0xff;
+	varvara.uxn.ram[0x0701] = 0x00;
+	varvara.uxn.ram[0x0710] = 0x00;
+	varvara.uxn.ram[0x0711] = 0xff;
+
+	start_test_voice(&varvara, 0, 0x0700, 0xf0);
+	voice0 = varvara.voices[0];
+	memcpy(audio0_ports, &varvara.uxn.devices[0x30], sizeof(audio0_ports));
+	start_test_voice(&varvara, 1, 0x0700, 0xf0);
+	CHECK(memcmp(&varvara.voices[0], &voice0, sizeof(voice0)) == 0);
+	CHECK(memcmp(&varvara.uxn.devices[0x30], audio0_ports,
+		sizeof(audio0_ports)) == 0);
+	voice1 = varvara.voices[1];
+	memcpy(audio1_ports, &varvara.uxn.devices[0x40], sizeof(audio1_ports));
+	start_test_voice(&varvara, 2, 0x0710, 0x0f);
+	CHECK(memcmp(&varvara.voices[0], &voice0, sizeof(voice0)) == 0);
+	CHECK(memcmp(&varvara.voices[1], &voice1, sizeof(voice1)) == 0);
+	CHECK(memcmp(&varvara.uxn.devices[0x30], audio0_ports,
+		sizeof(audio0_ports)) == 0);
+	CHECK(memcmp(&varvara.uxn.devices[0x40], audio1_ports,
+		sizeof(audio1_ports)) == 0);
+	CHECK(varvara.voices[0].active);
+	CHECK(varvara.voices[1].active);
+	CHECK(varvara.voices[2].active);
+	CHECK(!varvara.voices[3].active);
+
+	finished = varvara_audio_render(&varvara, samples, 169);
+	CHECK(samples[0] == 21668);
+	CHECK(samples[1] == -10920);
+	CHECK(samples[83 * 2] == 21668);
+	CHECK(samples[83 * 2 + 1] == -10920);
+	CHECK(samples[84 * 2] == -21840);
+	CHECK(samples[84 * 2 + 1] == 10834);
+	CHECK(samples[167 * 2] == -21840);
+	CHECK(samples[167 * 2 + 1] == 10834);
+	CHECK(samples[168 * 2] == 0);
+	CHECK(samples[168 * 2 + 1] == 0);
+	CHECK(finished == 0x07);
+	CHECK(!varvara_audio_active(&varvara));
+	CHECK(varvara.voices[0].index == 2);
+	CHECK(varvara.voices[1].index == 2);
+	CHECK(varvara.voices[2].index == 2);
+	CHECK(varvara.voices[3].index == 0);
+
+	varvara_destroy(&varvara);
+	fclose(output);
+	fclose(errors);
+}
+
+static void
 test_varvara_reboot(void)
 {
 	Varvara varvara;
@@ -843,6 +963,8 @@ main(void)
 	test_varvara_file1_independence();
 	test_varvara_datetime();
 	test_varvara_audio();
+	test_varvara_audio_four_voices();
+	test_varvara_audio_mix_and_pan();
 	test_varvara_reboot();
 	test_rom_size_guard();
 	test_rom_file_bank_boundary();
