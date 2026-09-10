@@ -13,14 +13,14 @@ Run:
 make check
 ~~~
 
-This builds both runners, performs 272 local checks, opens the included pixel
+This builds both runners, performs 379 local checks, opens the included pixel
 ROM with SDL2's headless video and audio drivers, and saves a screenshot.
 
 The local checks cover instruction modes, stack and memory wraparound, System
-expansion fill and copy, Console, Screen pixels and sprites, selected Audio0
-sample output, Controller and Mouse registers, File0 and File1 independence,
-DateTime, restarts, file limits, and the default denial plus explicit permission
-of Console `exec`.
+expansion fill and copy, Console, Screen pixels and sprites, selected sample
+output from all four Audio voices, a three-voice stereo mix, Controller and
+Mouse registers, File0 and File1 independence, DateTime, restarts, file limits,
+and the default denial plus explicit permission of Console `exec`.
 
 The loader checks include the exact boundary between bank zero and bank one. A
 65,280-byte ROM ends at bank-zero address `ffff` without changing bank one. The
@@ -34,9 +34,14 @@ files while their streams are interleaved, producing the exact contents
 reports the exact four-byte status `0006` without resetting its open read
 stream.
 
-The audio check does more than ask whether sound is nonzero. It compares chosen
-sample positions with the current
-[uxn2 reference renderer](https://git.sr.ht/~rabbits/uxn2).
+The Audio checks start Audio0, Audio1, Audio2, and Audio3 through their separate
+device ports. Each voice produces the same exact chosen sample values as the
+current [uxn2 reference renderer](https://git.sr.ht/~rabbits/uxn2), completes
+with its own finished bit, and reports the expected final sample position. A
+separate check starts two left-only voices and one right-only voice, confirms
+that starting one does not change the others, and compares the exact mixed
+left and right samples. These checks do not cover every pitch, envelope, loop,
+sample rate, clipping case, or SDL audio-queue behavior.
 
 ## Current upstream checks
 

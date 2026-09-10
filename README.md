@@ -84,12 +84,14 @@ Run the complete offline build and test suite:
 make check
 ```
 
-This performs 272 processor and device checks, then runs a small graphical ROM
+This performs 379 processor and device checks, then runs a small graphical ROM
 without opening a visible window. One check uses a ROM file that crosses from
 bank zero into bank one, copies known bank-one data back through the existing
 System expansion device, and compares the guest's exact output. Another check
 interleaves the two File devices and compares their separate files and read
-positions exactly.
+positions exactly. The Audio checks run each of the four voices separately at
+exact sample positions, then combine three voices to check basic mixing and
+separate left and right volume.
 
 When an internet connection is available, compare the emulator with current
 official tests and real Hundred Rabbits programs:
