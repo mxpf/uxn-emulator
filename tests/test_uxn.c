@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include "rom.h"
 #include "uxn.h"
 #include "varvara.h"
 
@@ -48,6 +49,15 @@ host_write_short(Varvara *varvara, uint8_t port, uint16_t value)
 {
 	varvara->uxn.devices[port] = (uint8_t)(value >> 8);
 	host_write_byte(varvara, (uint8_t)(port + 1u), (uint8_t)value);
+}
+
+static void
+write_rom_file(const char *path, const uint8_t *bytes, size_t length)
+{
+	FILE *file = fopen(path, "wb");
+	CHECK(file != NULL);
+	CHECK(fwrite(bytes, 1, length, file) == length);
+	CHECK(fclose(file) == 0);
 }
 
 static void
@@ -624,6 +634,98 @@ test_rom_size_guard(void)
 	CHECK(!uxn_load(&uxn, &byte, UXN_MEMORY_SIZE - UXN_ROM_START + 1u));
 }
 
+static void
+test_rom_file_bank_boundary(void)
+{
+	const char *path = "build/rom-bank-boundary-test.rom";
+	const size_t bank_zero_length = UXN_RAM_SIZE - UXN_ROM_START;
+	uint8_t *bytes = calloc(bank_zero_length + 1u, 1);
+	char error[256];
+	Uxn uxn;
+
+	CHECK(bytes != NULL);
+	bytes[0] = 0xa5;
+	bytes[bank_zero_length - 1u] = 0x5a;
+	write_rom_file(path, bytes, bank_zero_length);
+	uxn_init(&uxn);
+	uxn.ram[UXN_RAM_SIZE] = 0xc3;
+	CHECK(rom_load_file(&uxn, path, error, sizeof(error)));
+	CHECK(error[0] == '\0');
+	CHECK(uxn.ram[UXN_ROM_START] == 0xa5);
+	CHECK(uxn.ram[UXN_RAM_SIZE - 1u] == 0x5a);
+	CHECK(uxn.ram[UXN_RAM_SIZE] == 0xc3);
+
+	bytes[bank_zero_length] = 0x7e;
+	write_rom_file(path, bytes, bank_zero_length + 1u);
+	uxn_init(&uxn);
+	CHECK(rom_load_file(&uxn, path, error, sizeof(error)));
+	CHECK(error[0] == '\0');
+	CHECK(uxn.ram[UXN_RAM_SIZE - 1u] == 0x5a);
+	CHECK(uxn.ram[UXN_RAM_SIZE] == 0x7e);
+	CHECK(remove(path) == 0);
+	free(bytes);
+}
+
+static void
+test_banked_rom_execution(void)
+{
+	const char *path = "build/banked-rom-test.rom";
+	const size_t bank_zero_length = UXN_RAM_SIZE - UXN_ROM_START;
+	const uint8_t program[] = {
+		/* Ask System/expansion to run the command at 0200. */
+		0xa0, 0x02, 0x00, 0x80, 0x02, 0x37,
+		/* Read the copied bytes from bank zero and print them. */
+		0xa0, 0x03, 0x00, 0x14, 0x80, 0x18, 0x17,
+		0xa0, 0x03, 0x01, 0x14, 0x80, 0x18, 0x17,
+		0xa0, 0x03, 0x02, 0x14, 0x80, 0x18, 0x17,
+		0xa0, 0x03, 0x03, 0x14, 0x80, 0x18, 0x17,
+		0x00
+	};
+	const uint8_t command[] = {
+		0x01,             /* copy */
+		0x00, 0x04,       /* four bytes */
+		0x00, 0x01,       /* from bank one */
+		0x00, 0x00,       /* at address 0000 */
+		0x00, 0x00,       /* to bank zero */
+		0x03, 0x00        /* at address 0300 */
+	};
+	const uint8_t expected[] = {'B', 'A', 'N', 'K'};
+	uint8_t actual[sizeof(expected)];
+	uint8_t *rom = calloc(bank_zero_length + sizeof(expected), 1);
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	char error[256];
+	Varvara varvara;
+
+	CHECK(rom != NULL);
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	memcpy(rom, program, sizeof(program));
+	memcpy(&rom[0x0200 - UXN_ROM_START], command, sizeof(command));
+	rom[bank_zero_length - 1u] = 0x6d;
+	memcpy(&rom[bank_zero_length], expected, sizeof(expected));
+	write_rom_file(path, rom, bank_zero_length + sizeof(expected));
+
+	CHECK(varvara_init(&varvara, output, errors));
+	CHECK(rom_load_file(&varvara.uxn, path, error, sizeof(error)));
+	CHECK(error[0] == '\0');
+	CHECK(varvara.uxn.ram[UXN_RAM_SIZE - 1u] == 0x6d);
+	CHECK(memcmp(&varvara.uxn.ram[UXN_RAM_SIZE], expected,
+		sizeof(expected)) == 0);
+	CHECK(varvara_start(&varvara, 100) == UXN_STOP_BREAK);
+	CHECK(memcmp(&varvara.uxn.ram[0x0300], expected, sizeof(expected)) == 0);
+	rewind(output);
+	CHECK(fread(actual, 1, sizeof(actual), output) == sizeof(actual));
+	CHECK(memcmp(actual, expected, sizeof(expected)) == 0);
+	CHECK(fgetc(output) == EOF);
+
+	varvara_destroy(&varvara);
+	CHECK(remove(path) == 0);
+	free(rom);
+	fclose(output);
+	fclose(errors);
+}
+
 int
 main(void)
 {
@@ -645,6 +747,8 @@ main(void)
 	test_varvara_audio();
 	test_varvara_reboot();
 	test_rom_size_guard();
+	test_rom_file_bank_boundary();
+	test_banked_rom_execution();
 	printf("ok - %u checks\n", tests_run);
 	return 0;
 }
