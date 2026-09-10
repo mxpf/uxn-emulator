@@ -9,6 +9,7 @@ TEST_BIN := build/test_uxn
 EMU_INPUT_TEST_BIN := build/test_emu_input
 CONSTELLATION_TEST_BIN := build/test_constellation
 REAL_ROM_TEST_BIN := build/test_real_roms
+LEFT_WORKFLOW_TEST_BIN := build/test_left_workflow
 LESSON_MEMORY_BIN := build/lesson-memory
 PIXEL_ROM := build/pixel.rom
 ASSEMBLER_ROM := build/drifblim.rom
@@ -54,6 +55,9 @@ $(CONSTELLATION_TEST_BIN): tests/test_constellation.c src/constellation.c src/ux
 
 $(REAL_ROM_TEST_BIN): tests/test_real_roms.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_real_roms.c $(ROM_SOURCE) $(CORE_SOURCES) -o $@
+
+$(LEFT_WORKFLOW_TEST_BIN): tests/test_left_workflow.c src/emu.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | build
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) tests/test_left_workflow.c $(ROM_SOURCE) $(CORE_SOURCES) $(SDL_LIBS) -o $@
 
 $(LESSON_MEMORY_BIN): lessons/01-memory.c | build
 	$(CC) $(CFLAGS) lessons/01-memory.c -o $@
@@ -115,7 +119,7 @@ compatibility: $(BIN) $(EMU_BIN)
 
 verify-online: compatibility real-roms
 
-real-roms: $(BIN) $(EMU_BIN) $(ASSEMBLER_ROM) $(REAL_ROM_TEST_BIN)
+real-roms: $(BIN) $(EMU_BIN) $(ASSEMBLER_ROM) $(REAL_ROM_TEST_BIN) $(LEFT_WORKFLOW_TEST_BIN)
 	./tests/real-roms.sh
 
 assembler: $(ASSEMBLER_ROM)
