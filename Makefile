@@ -6,6 +6,7 @@ BIN := bin/uxncli
 EMU_BIN := bin/uxnemu
 CONSTELLATION_BIN := bin/constellation-v0
 TEST_BIN := build/test_uxn
+EMU_INPUT_TEST_BIN := build/test_emu_input
 CONSTELLATION_TEST_BIN := build/test_constellation
 REAL_ROM_TEST_BIN := build/test_real_roms
 LESSON_MEMORY_BIN := build/lesson-memory
@@ -45,6 +46,9 @@ $(CONSTELLATION_BIN): src/constellation_main.c src/constellation.c src/uxn.c inc
 $(TEST_BIN): tests/test_uxn.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_uxn.c $(ROM_SOURCE) $(CORE_SOURCES) -o $@
 
+$(EMU_INPUT_TEST_BIN): tests/test_emu_input.c src/emu.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | build
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) tests/test_emu_input.c $(ROM_SOURCE) $(CORE_SOURCES) $(SDL_LIBS) -o $@
+
 $(CONSTELLATION_TEST_BIN): tests/test_constellation.c src/constellation.c src/uxn.c include/constellation.h include/uxn.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_constellation.c src/constellation.c src/uxn.c -o $@
 
@@ -67,8 +71,9 @@ $(HELLO_ROM): examples/hello.tal $(ASSEMBLER_ROM) $(BIN)
 bin build:
 	mkdir -p $@
 
-test: $(TEST_BIN) $(CONSTELLATION_TEST_BIN)
+test: $(TEST_BIN) $(EMU_INPUT_TEST_BIN) $(CONSTELLATION_TEST_BIN)
 	./$(TEST_BIN)
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./$(EMU_INPUT_TEST_BIN)
 	./$(CONSTELLATION_TEST_BIN)
 
 build/constellation-%.rom: examples/constellation-%.tal $(ASSEMBLER_ROM) $(BIN)
