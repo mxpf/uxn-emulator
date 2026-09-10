@@ -63,3 +63,4 @@ fi
 printf '%s\n' 'dexe: opened the Nasu ROM as bytes'
 
 "$project_dir/build/test_real_roms" left.rom noodle.rom cccc.rom
+"$project_dir/build/test_left_workflow" left.rom left.rom.sym

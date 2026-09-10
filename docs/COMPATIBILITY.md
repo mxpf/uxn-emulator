@@ -94,6 +94,17 @@ also checks these interactions:
 All eight applications drew nonblank screens and all 22 real-ROM interaction
 checks passed on the date above.
 
+A separate 58-check Left workflow starts the current application with the
+exact file `alpha\nbeta\n` through `uxnemu`'s argument-delivery routine and
+confirms those bytes in Left's own text buffer. A Delete key-down travels
+through SDL's queue and the production host event handler, changing the buffer
+to exactly `lpha\nbeta\n`. Control key-down and key-up also travel through the
+SDL queue. The `s` text-input event is passed directly to the same production
+handler rather than through the queue. Left then saves through its normal File
+device behavior. The file contains exactly `lpha\nbeta\n`, and a fresh Left
+session loads the same bytes. This proves that connected workflow, not general
+editing correctness or every way of delivering text and shortcuts.
+
 ## Optional host behavior
 
 | Behavior | Default | How to enable it |

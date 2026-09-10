@@ -107,7 +107,9 @@ make verify-online
 The current implementation passes the official opcode and device checks. It
 has also assembled and opened all eight applications listed in the Hundred
 Rabbits [ROM collection](https://wiki.xxiivv.com/site/roms.html), with added
-checks for typing, drawing, saving files, and producing sound.
+checks for typing, drawing, saving files, and producing sound. Left also
+completes a repeatable load, edit, save, and reopen workflow whose text is
+compared byte for byte.
 
 ## Read further
 
