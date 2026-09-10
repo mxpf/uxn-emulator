@@ -1,5 +1,10 @@
 # The Last Visitor: five-minute reasoning study
 
+The baseline below records the original reasoning slice. The current build also
+has an optional [discovery-gated follow-up](MYSTERY-CONDITIONAL.md), which changes
+the third field from TOOK to KEPT and tests a different accepted conclusion.
+That is a functional branching test, not a claim of finished puzzle logic.
+
 ## Authored mystery
 
 The player is in a locked study after its three visitors have left. A ledger
@@ -34,7 +39,7 @@ The conclusion identifies Cora's false account, traces the square-to-triangle
 key handover and the envelope's paper match, and unlocks the door. It does not
 invent a murder or motive.
 
-## Clue revision: require connections, not a named answer sheet
+## Historical clue revision: require connections, not a named answer sheet
 
 The first version named Cora in both a timestamped entry and a signed receipt.
 This revision preserves the room, all nine actions, evidence masks, solution,

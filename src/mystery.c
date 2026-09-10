@@ -250,7 +250,7 @@ bool mystery_input(MysterySession *s, const uint8_t input[3]) {
   if (!s || !s->live || s->failed || s->replaying || !input)
     return false;
   if (!((input[0] == 0 && input[2] < 192) ||
-        (input[0] == 1 && input[1] >= 1 && input[1] <= 9 && input[2] == 0)))
+        (input[0] == 1 && input[1] >= 1 && input[1] <= 10 && input[2] == 0)))
     return false;
   if (s->count == MYSTERY_INPUTS || s->event_count + 128 > MYSTERY_EVENTS) {
     s->sealed = true;

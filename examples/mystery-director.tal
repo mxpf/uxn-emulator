@@ -1,32 +1,53 @@
-( Owns recovered key and exit. Deduction owns evidence and hypothesis.
-  ZP 00 key, 01 exit, 02 pending action, fe protocol error.
-  Presentation action 1..9. Deduction returns six-byte status. )
+( Cartridge coordinator: key, terminal flag, pending action, question state.
+  Question state: 0 locked, 1 desk discovered, 2 answer delivered.
+  Deduction replies remain six bytes. Presentation snapshots are seven. )
 |0100
  ;receive #d0 DEO2 #0800 #d2 DEO2
- #0900 #d6 DEO2 #06 #d8 DEO BRK
+ #0900 #d6 DEO2 #07 #d8 DEO BRK
 @receive
  #dd DEI #02 EQU ?conclusion
  #dd DEI #00 NEQ ?done #d4 DEI #01 NEQ ?done
- #0800 LDA #01 LTH ?done #0800 LDA #09 GTH ?done
+ #0800 LDA #01 LTH ?done #0800 LDA #0a GTH ?done
+ #0800 LDA #0a EQU ?question
  #01 LDZ ?show
  #02 LDZ ?done
  #0800 LDA #03 NEQ ?no-key #01 #00 STZ
  @no-key #0800 LDA #02 STZ
- #0800 LDA #0900 STA #02 #dc DEO #01 #d8 DEO #01 #d9 DEO
- #d9 DEI ?done #01 #fe STZ BRK
+ #0800 LDA #0900 STA #02 #dc DEO #01 #d8 DEO !send
+@question
+ #01 LDZ ?done #02 LDZ ?done #03 LDZ #01 NEQ ?done
+ #0a #02 STZ
+ ( Explicit returned-page result, not a forwarded input action. )
+ #0a01 #0900 STA2 #02 #dc DEO #02 #d8 DEO !send
 @conclusion
  #d4 DEI #06 NEQ ?done #02 LDZ #00 EQU ?done
- #0800 LDA #0a GTH ?done #0801 LDA #3f GTH ?done
+ #0800 LDA #0c GTH ?done #0801 LDA #3f GTH ?done
  #0802 LDA #03 GTH ?done #0803 LDA #03 GTH ?done
  #0804 LDA #03 GTH ?done #0805 LDA #01 GTH ?done
+ #02 LDZ #0a NEQ ?ordinary
+ #0800 LDA #0b NEQ ?done #0805 LDA ?done
+ #0801 LDA #18 AND #18 NEQ ?done
+ #02 #03 STZ !copy
+@ordinary
+ #0800 LDA #0b EQU ?done
  #0805 LDA #00 EQU ?copy
  #02 LDZ #09 NEQ ?done #00 LDZ #00 EQU ?done
- #0800 LDA #0a NEQ ?done
+ #03 LDZ #02 EQU ?revised-verdict
+ #0800 LDA #0a NEQ ?done !accept
+@revised-verdict
+ #0800 LDA #0c NEQ ?done
+@accept
  #01 #01 STZ
 @copy
+ #03 LDZ ?known-question
+ #0801 LDA #18 AND #18 NEQ ?known-question
+ #01 #03 STZ
+@known-question
  #00 #02 STZ
  #0800 LDA2 #0900 STA2 #0802 LDA2 #0902 STA2 #0804 LDA2 #0904 STA2
- #01 LDZ #0905 STA
+ #01 LDZ #0905 STA #03 LDZ #0906 STA
 @show
- #01 #dc DEO #06 #d8 DEO #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
+ #01 #dc DEO #07 #d8 DEO
+@send
+ #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
 @done BRK

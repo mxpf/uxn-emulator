@@ -177,6 +177,7 @@ mystery-check: bin/mystery build/test_mystery $(MYSTERY_ROMS)
 	./build/test_mystery
 	node tests/mystery_authoring_check.cjs
 	SDL_VIDEODRIVER=dummy ./bin/mystery --script 12345666789
+	SDL_VIDEODRIVER=dummy ./bin/mystery --script q12345qq666789889q
 build/mystery_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/mystery_probe.c $(MYSTERY_SOURCES) -o $@
 .PHONY: mystery-web-check

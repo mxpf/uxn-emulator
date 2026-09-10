@@ -20,7 +20,7 @@ EXPORT int mystery_click(unsigned x, unsigned y) {
   return mystery_input(&session, in);
 }
 EXPORT int mystery_action(unsigned action) {
-  if (action < 1 || action > 9)
+  if (action < 1 || action > 10)
     return 0;
   uint8_t in[] = {1, (uint8_t)action, 0};
   return mystery_input(&session, in);

@@ -101,6 +101,12 @@ checks for typing, drawing, saving files, and producing sound.
 
 ## Read further
 
+Constellation explores sophisticated software built from compatible Uxn
+machines; using multiple machines is a hypothesis, not a requirement. The next
+milestone is a complete cartridge, evaluated against simpler single-machine
+approaches. See the [north star](DESIGN.md#constellations-north-star) and
+[architecture comparison plan](docs/CARTRIDGE-COMPARISON.md).
+
 Build its browser version with `make garden-web-check` (Emscripten required),
 then serve `build/web/`. See [browser instructions and portability contract](docs/TINY-NEIGHBORS.md#browser-host).
 
@@ -143,6 +149,8 @@ and validation guarantees; this does not add filesystem access to the emulator.
 - [The Last Visitor reasoning study](docs/MYSTERY-OPENING.md) tests the larger
   locked-room experiment with three accounts, six facts, a contradiction and
   a player-built three-part conclusion across three cartridge-owned ROMs.
+  An optional discovery-gated question now changes the accepted conclusion
+  through explicit cartridge messages, without shared-runtime changes.
   Run `make mystery` or build the private
   browser preview with `make mystery-web`; it is not in the public collection.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.

@@ -3,6 +3,29 @@
 This emulator has two jobs: run Uxn programs and remain small enough to learn
 from. A feature that weakens either job needs a very good reason to exist.
 
+## Constellation's north star
+
+“Constellation is an experimental computer built from compatible Uxn machines,
+designed to discover how sophisticated, expressive, and durable software can
+become without sacrificing small understandable parts.”
+
+One machine is a valid design. Multiple machines are an evaluated option, not
+the project's identity or a required destination. Preserve the routing,
+scheduling, bounded queues, external-input and replay experiments as tested
+infrastructure; their existence does not oblige applications to use them.
+
+The next milestone is a sophisticated, complete cartridge experiment, not more
+platform machinery in isolation. Prefer the simplest credible architecture.
+Promote cooperation only when it materially improves authoring, isolation,
+replaceability, causal inspection/replay, or enables otherwise unavailable
+behavior at an acceptable cost. Rearranging code is not enough.
+
+The Uxn core stays compatible and unchanged. Bounded behavior, deterministic
+replay, portability and understandable parts remain requirements. Room,
+character and deduction rules belong to cartridges, never the generic host.
+See [the mystery architecture comparison](docs/CARTRIDGE-COMPARISON.md) for the
+current assessment and the next bounded experiment.
+
 ## Keep the center fixed
 
 The Uxn processor gives every ROM the same instructions, stacks, and memory.

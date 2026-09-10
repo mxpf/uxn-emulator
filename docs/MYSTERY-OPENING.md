@@ -6,7 +6,9 @@ Design.md`. It is no longer just the opening interaction.
 
 See [authored mystery and architectural assessment](LAST-VISITOR-MYSTERY.md)
 for the six facts, accounts, contradiction, solution and remaining questions.
-That document contains spoilers.
+That document contains spoilers. The next functional slice is documented in
+[discovery-gated follow-up](MYSTERY-CONDITIONAL.md): desk discovery unlocks
+an optional question whose result changes the accepted conclusion.
 
 The current clue revision identifies visitors through genuine seals, connects
 an unnamed key handover to entry order, and replaces the explicit receipt with
@@ -22,6 +24,9 @@ Click five room hotspots or press 1–5 to read the three accounts, desk evidenc
 and door. Press 6–8 to cycle the three hypothesis fields; press 9 to conclude.
 All fields start unanswered. Read every hotspot before submitting; the desk
 supplies two facts. Incorrect guesses are revisable without losing evidence.
+Q (or the top-right canvas label) asks Cora after inspecting the desk. The
+question is optional and can be used once, before a successful conclusion.
+Her returned-page result changes the accepted KEPT answer to NOTHING.
 R replays, N restarts, Escape closes the native window.
 
 With Emscripten active:
@@ -54,35 +59,37 @@ are local; no external fonts, services or uploads are required.
 | Node | Owns | Communicates with |
 | --- | --- | --- |
 | 0: presentation | Hit testing, layout, text, visible hypothesis and exit | External input; director |
-| 1: director | Recovered key, pending interaction, final exit consequence | Presentation; deduction |
-| 2: deduction | Six learned facts, three proposed relations, acceptance | Director only |
+| 1: director | Recovered key, pending interaction, question availability, final exit consequence | Presentation; deduction |
+| 2: deduction | Six learned facts, three proposed relations, returned-page result, acceptance | Director only |
 
 Uxn, the shared runner and routed host remain unchanged. Each machine retains
 private memory. These roles and protocols belong only to this cartridge.
 
 External selector 7 delivers three bytes to presentation: `0,x,y` for a click
-or `1,action,0` for actions 1–9. Presentation sends a one-byte action to
-director on route 1. Director forwards that action to deduction on route 2.
+or `1,action,0` for actions 1–10 (10 is Q). Presentation sends a one-byte action to
+director on route 1. Director forwards actions 1–9 to deduction on route 2.
+For an available Q request it instead sends the explicit result `[10,1]`.
 Deduction returns six bytes on route 1: message ID, evidence mask, visitor
 choice, entry choice, object choice, verdict. Director authorizes the exit
-only for a requested conclusion with the recovered key, then sends the six
-bytes to presentation with the last byte representing actual exit state.
+only for a requested conclusion with the recovered key, then sends seven
+bytes to presentation: the six fields with byte 5 representing actual exit
+state, followed by question state (0 locked, 1 available, 2 answered).
 
 Every handler checks source, length and ranges. The director accepts a
 deduction response only while an interaction is pending. Completed state is
-stable; subsequent actions redisplay the conclusion. Hypothesis choices start
+stable; subsequent ordinary actions redisplay the conclusion and Q is ignored. Hypothesis choices start
 at zero, then cycle 1–3. All facts and all three correct nonzero choices are
 required. Failed proposals reveal no per-field score.
 
-Presentation zero page 00–05 mirrors its six-byte display status. Director
-00 owns key, 01 exit, 02 pending action. Deduction 00 owns evidence, 01–03
-choices, 04 verdict. FE in each ROM reports an unexpected send failure.
+Presentation zero page 00–06 mirrors its seven-byte display status. Director
+00 owns key, 01 exit, 02 pending action, 03 question state. Deduction 00 owns
+evidence, 01–03 choices, 04 verdict, 05 whether the returned-page result applied. FE in each ROM reports an unexpected send failure.
 These offsets are test/implementation details, not a platform ABI.
 
 ## Authored content and display
 
 `examples/mystery-room.json` holds title, messages, choice labels, evidence
-masks, solution, rectangles and five story hit regions. The cartridge-local
+masks, baseline/follow-up solutions, question labels, rectangles and five story hit regions. The cartridge-local
 build helper packs resources into presentation and deduction ROMs. Native
 and web use those same compiled files. Both prose and solution can change
 without host or guest executable-code edits; authors must keep their prose,
@@ -129,21 +136,24 @@ make mystery-web-check
 node tests/mystery_browser_check.cjs http://127.0.0.1:8770/
 ```
 
-- 322,908 native checks: all 2,048 discoverable evidence-subset/hypothesis
-  combinations, all 120 inspection orders, repeated reads, premature guesses,
+- 728,550 native checks: all 4,096 discoverable evidence-subset/hypothesis
+  branches, all 120 inspection orders on both paths, repeated reads, premature guesses,
   wrong-answer revisions, cycling, terminal state, malformed protocols,
   input/click/display bounds (including object-name targets), recording limits
   and repeated exact replay.
 - Authoring tests change prose and solution independently, verify executable
   code remains identical, and reject malformed strings, masks, choices,
   rectangles and action IDs.
-- 1,906 native/WebAssembly canonical full-state/queue/trace/pixel fingerprints,
-  including all 64 unanswered/answered hypothesis combinations and replay.
+- 3,853 native/WebAssembly canonical full-state/queue/trace/pixel fingerprints,
+  including all 64 unanswered/answered hypothesis combinations on both paths,
+  early/repeated questions, and replay. The conditional report explains the protocol.
 - Browser: real object and name clicks, keyboard, focused-button activation, incorrect
   proposal and correction, native pixel comparisons, replay/reset cancellation,
-  seven responsive viewport sizes and no page errors.
+  seven responsive viewport sizes and no page errors. The follow-up is exercised
+  through canvas and keyboard at desktop and mobile sizes, including changed
+  acceptance, repeated requests and reset during replay.
 - Shared-runner regression: 2,769 checks and 39 allocation checks.
-- AddressSanitizer and UndefinedBehaviorSanitizer: all 322,908 native checks
+- AddressSanitizer and UndefinedBehaviorSanitizer: all native checks
   pass with no reported memory-safety or undefined-behavior errors.
 
 Cross-platform fingerprints and pixel hashes are not collision-free exact

@@ -2,20 +2,24 @@
 const fs = require('node:fs'), assert = require('node:assert/strict');
 const data = JSON.parse(fs.readFileSync('examples/mystery-room.json', 'utf8'));
 const hex = n => { assert.ok(Number.isInteger(n) && n >= 0 && n <= 255); return n.toString(16).padStart(2, '0'); };
-assert.equal(data.messages.length, 11);
+assert.equal(data.messages.length, 13);
 assert.equal(data.hotspots.length, 5);
 assert.equal(data.labels.length, 5);
 assert.equal(data.choices.length, 3);
 data.choices.forEach(c => assert.equal(c.length, 4));
 assert.equal(data.solution.length, 3);
 data.solution.forEach(n => assert.ok(Number.isInteger(n) && n >= 1 && n <= 3));
+assert.equal(data.followupSolution.length, 3);
+data.followupSolution.forEach(n => assert.ok(Number.isInteger(n) && n >= 1 && n <= 3));
+assert.equal(data.questionLabels.length, 3);
+data.questionLabels.forEach(s => assert.ok(typeof s === 'string' && !s.includes('\n') && s.length <= 12));
 assert.equal(data.evidenceMasks.length, 5);
 let seen = 0;
 for (const n of data.evidenceMasks) {
  assert.ok(Number.isInteger(n) && n > 0 && n < 64 && !(seen & n)); seen |= n;
 }
 assert.equal(seen, 63);
-const strings = [data.title, ...data.labels, ...data.choices.flat(), '9 CONCLUDE', ...data.messages];
+const strings = [data.title, ...data.labels, ...data.choices.flat(), '9 CONCLUDE', ...data.messages, ...data.questionLabels];
 for (const s of strings) {
  assert.equal(typeof s, 'string'); assert.match(s, /^[A-Z0-9 .:\n?-]+$/);
  assert.ok(s.length <= 160 && s.split('\n').length <= 4);
@@ -36,8 +40,8 @@ for (const r of data.hotspots) {
  actions.add(a);
 }
 assert.equal(actions.size, 5);
-// Four hypothesis controls, separate from five story objects.
-const hotspots = [...data.hotspots, [8,114,176,124,6], [8,124,176,134,7], [8,134,176,144,8], [182,114,248,144,9]];
+// Four hypothesis controls and an optional question, separate from story objects.
+const hotspots = [...data.hotspots, [8,114,176,124,6], [8,124,176,134,7], [8,134,176,144,8], [182,114,248,144,9], [174,4,248,22,10]];
 let out = fs.readFileSync('examples/mystery-presentation.tal', 'utf8') + '\n|1000\n';
 out += '@rects\n' + data.rectangles.map(r => r.map(hex).join(' ')).join('\n') + '\n@rects-end\n';
 out += '@hotspots\n' + hotspots.map(r => r.map(hex).join(' ')).join('\n') + '\n@hotspots-end\n';
@@ -48,4 +52,4 @@ out += strings.map(s => Array.from(Buffer.from(s)).map(hex).join(' ')).join('\n'
 const target = process.argv[2];
 assert.ok(!target || ['build/mystery-presentation.tal', 'build/mystery-deduction.tal'].includes(target));
 if (!target || target === 'build/mystery-presentation.tal') fs.writeFileSync('build/mystery-presentation.tal', out);
-if (!target || target === 'build/mystery-deduction.tal') fs.writeFileSync('build/mystery-deduction.tal', fs.readFileSync('examples/mystery-deduction.tal', 'utf8') + '\n@evidence ' + data.evidenceMasks.map(hex).join(' ') + '\n@solution ' + data.solution.map(hex).join(' ') + '\n');
+if (!target || target === 'build/mystery-deduction.tal') fs.writeFileSync('build/mystery-deduction.tal', fs.readFileSync('examples/mystery-deduction.tal', 'utf8') + '\n@evidence ' + data.evidenceMasks.map(hex).join(' ') + '\n@solution ' + data.solution.map(hex).join(' ') + '\n@followup-solution ' + data.followupSolution.map(hex).join(' ') + '\n');

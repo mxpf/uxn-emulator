@@ -1,6 +1,6 @@
 ( Presentation owns pixels, hit testing and answer display.
-  ZP 00 message, 01 facts, 02 who, 03 entry, 04 object, 05 exit.
-  External 0 x y / 1 action 0. Director reply is six bytes. )
+  ZP 00 message, 01 facts, 02 who, 03 entry, 04 object, 05 exit, 06 question state.
+  External 0 x y / 1 action 0. Director reply is seven bytes. )
 |0100
  ;receive #d0 DEO2 #0800 #d2 DEO2
  #0900 #d6 DEO2 #01 #d8 DEO #01 #dc DEO
@@ -21,17 +21,23 @@
  @hit-miss POP2 BRK
 @key
  #0802 LDA ?done
- #0801 LDA #01 LTH ?done #0801 LDA #09 GTH ?done
+ #0801 LDA #01 LTH ?done #0801 LDA #0a GTH ?done
  #0801 LDA
 @send
- #0900 STA #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
+ DUP #0a NEQ ?send-action
+ #06 LDZ #01 NEQ ?ignore-action #05 LDZ ?ignore-action
+ @send-action
+ #0900 STA #01 #d9 DEO #d9 DEI ?done #01 #fe STZ BRK
+@ignore-action POP
 @done BRK
 @reply
- #d4 DEI #06 NEQ ?done
- #0800 LDA #0a GTH ?done #0801 LDA #3f GTH ?done
+ #d4 DEI #07 NEQ ?done
+ #0800 LDA #0c GTH ?done #0801 LDA #3f GTH ?done
  #0802 LDA #03 GTH ?done #0803 LDA #03 GTH ?done
  #0804 LDA #03 GTH ?done #0805 LDA #01 GTH ?done
+ #0806 LDA #02 GTH ?done
  #0800 LDA2 #00 STZ2 #0802 LDA2 #02 STZ2 #0804 LDA2 #04 STZ2
+ #0806 LDA #06 STZ
 @paint
  #00 #24 DEO #01 #25 DEO
  ;rects
@@ -55,6 +61,9 @@
  #08 #20 DEO #7d #21 DEO #03 LDZ #0a ADD ;text JSR2
  #08 #20 DEO #87 #21 DEO #04 LDZ #0e ADD ;text JSR2
  #04 #24 DEO #b8 #20 DEO #7d #21 DEO #12 ;text JSR2
+ #06 #24 DEO #06 LDZ #01 NEQ ?question-label
+ #05 LDZ ?question-label #04 #24 DEO
+ @question-label #ae #20 DEO #0a #21 DEO #06 LDZ #20 ADD ;text JSR2
  #05 #24 DEO #08 #20 DEO #96 #21 DEO #00 LDZ #13 ADD ;text JSR2
  #04 #25 DEO BRK
 @text ( index -- )

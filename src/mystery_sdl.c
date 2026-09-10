@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
   if (argc == 3 && !strcmp(argv[1], "--script"))
     script = argv[2];
   else if (argc != 1) {
-    fprintf(stderr, "usage: mystery [--script 1..9]\n");
+    fprintf(stderr, "usage: mystery [--script 1..9,q]\n");
     return 1;
   }
   MysterySession *s = calloc(1, sizeof(*s));
@@ -20,7 +20,8 @@ int main(int argc, char **argv) {
   if (!s || !mystery_init(s) || SDL_Init(SDL_INIT_VIDEO) != 0)
     goto done;
   window = SDL_CreateWindow(
-      "The Last Visitor | Reasoning study | Click objects or 1-9 | R replay | "
+      "The Last Visitor | Reasoning study | Click objects or 1-9 | Q ask | R "
+      "replay | "
       "N restart | Esc quit",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1024, 768,
       script ? SDL_WINDOW_HIDDEN : SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
     goto done;
   if (script) {
     for (size_t i = 0; script[i]; i++) {
-      uint8_t in[] = {1, (uint8_t)(script[i] - '0'), 0};
+      uint8_t in[] = {1, (uint8_t)(script[i] == 'q' ? 10 : script[i] - '0'), 0};
       if (!mystery_input(s, in))
         goto done;
     }
@@ -65,6 +66,10 @@ int main(int argc, char **argv) {
           if (!mystery_replay_begin(s))
             goto done;
           next = SDL_GetTicks() + 450;
+        } else if (k == SDLK_q && !s->replaying) {
+          uint8_t in[] = {1, 10, 0};
+          if (!mystery_input(s, in) && s->failed)
+            goto done;
         } else if (k >= SDLK_1 && k <= SDLK_9 && !s->replaying) {
           uint8_t in[] = {1, (uint8_t)(k - SDLK_0), 0};
           if (!mystery_input(s, in) && s->failed)
@@ -96,7 +101,7 @@ int main(int argc, char **argv) {
                 : s->replay_done ? "The Last Visitor | Exact replay verified | "
                                    "1-9 inspect | N restart"
                                  : "The Last Visitor | Reasoning study | Click "
-                                   "or 1-9 | R replay | N restart "
+                                   "or 1-9 | Q ask | R replay | N restart "
                                    "| Esc quit");
     if (SDL_UpdateTexture(texture, NULL, m->pixels, 256 * sizeof(uint32_t)) ||
         SDL_RenderClear(renderer) ||

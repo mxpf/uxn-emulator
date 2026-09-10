@@ -1,11 +1,14 @@
 ( Owns learned facts and a three-field hypothesis. No inventory or scene state.
-  ZP 00 facts, 01 who, 02 entry, 03 object, 04 verdict, fe send error.
-  Input action 1..9 from director. Reply: message facts who entry object verdict. )
+  ZP 00 facts, 01-03 choices, 04 verdict, 05 result applied, fe send error.
+  Director input: action 1..9 or two-byte returned-page result.
+  Reply: message facts who entry object verdict. )
 |0100
  ;receive #d0 DEO2 #0800 #d2 DEO2
  #0900 #d6 DEO2 #06 #d8 DEO #01 #dc DEO BRK
 @receive
- #dd DEI #01 NEQ ?done #d4 DEI #01 NEQ ?done
+ #dd DEI #01 NEQ ?done
+ #d4 DEI #02 EQU ?result
+ #d4 DEI #01 NEQ ?done
  #0800 LDA #01 LTH ?done #0800 LDA #09 GTH ?done
  #00 #04 STZ
  #0800 LDA #06 LTH ?observe
@@ -17,15 +20,25 @@
 @observe
  #00 #0800 LDA #01 SUB ;evidence ADD2 LDA #00 LDZ ORA #00 STZ
  #0800 LDA !reply
+@result
+ #0800 LDA2 #0a01 NEQ2 ?done
+ #00 LDZ #18 AND #18 NEQ ?done #05 LDZ ?done
+ #01 #05 STZ #00 #04 STZ #0b !reply
 @test
  #00 LDZ #3f NEQ ?missing
  #01 LDZ #00 EQU ?incomplete
  #02 LDZ #00 EQU ?incomplete
  #03 LDZ #00 EQU ?incomplete
+ #05 LDZ ?followup
  #01 LDZ ;solution LDA NEQ ?wrong
  #02 LDZ ;solution INC2 LDA NEQ ?wrong
  #03 LDZ ;solution #0002 ADD2 LDA NEQ ?wrong
  #01 #04 STZ #0a !reply
+@followup
+ #01 LDZ ;followup-solution LDA NEQ ?wrong
+ #02 LDZ ;followup-solution INC2 LDA NEQ ?wrong
+ #03 LDZ ;followup-solution #0002 ADD2 LDA NEQ ?wrong
+ #01 #04 STZ #0c !reply
 @missing #07 !reply
 @incomplete #08 !reply
 @wrong #09

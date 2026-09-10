@@ -104,6 +104,10 @@ EXPORT int mystery_test_op(int op) {
     return mystery_reset();
   if (op >= '1' && op <= '9')
     return mystery_action((unsigned)(op - '0'));
+  if (op == 'q')
+    return mystery_action(10);
+  if (op == 'f')
+    return mystery_click(200, 12);
   if (op == 'r')
     return mystery_play();
   if (op == '.')

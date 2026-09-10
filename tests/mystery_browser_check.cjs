@@ -37,7 +37,7 @@ try{
  call('focus','[data-action="6"]');call('press','Enter');script+='6';
  call('focus','canvas');call('press','7');script+='7';call('press','8');script+='8';
  call('press','9');script+='9';assert.match(text(),/DOES NOT FIT/);matchNative(script);
- assert.match(text(),/6 LAST: ADA/);assert.match(text(),/7 ENTRY: SUN KEY/);assert.match(text(),/8 TOOK: LEDGER PAGE/);
+ assert.match(text(),/6 LAST: ADA/);assert.match(text(),/7 ENTRY: SUN KEY/);assert.match(text(),/8 KEPT: LEDGER PAGE/);
  call('press','6');call('press','6');script+='66';
  call('click','[data-action="9"]');script+='9';assert.match(text(),/CASE CLOSED/);matchNative(script);
  const final=hash();call('click','#replay');assert.equal(evaluate(`document.querySelector('[data-action="1"]').disabled`),true);
@@ -45,7 +45,30 @@ try{
  call('screenshot','build/mystery-ending.png');
  // A reset during replay cancels the old timer and starts a genuinely fresh room.
  call('click','#replay');call('click','#restart');call('wait','650');assert.match(text(),/ONE FALSE ACCOUNT/);matchNative('');
+ // Q is cartridge-gated: early requests and duplicates do not repaint.
+ for (const [w,h] of [[390,844],[1440,900]]) {
+  call('set','viewport',String(w),String(h));call('click','#restart');
+  assert.match(text(),/Q LOCKED/);
+  const locked=hash();call('focus','canvas');call('press','q');click(200,12);
+  assert.equal(hash(),locked);matchNative('qf');
+  call('press','4');assert.match(text(),/Q ASK CORA/);matchNative('qf4');
+  click(200,12);assert.match(text(),/Q ANSWERED/);
+  assert.match(text(),/THE MISSING PAGE IS THERE/);matchNative('qf4f');
+  const answered=hash();call('focus','canvas');call('press','q');click(200,12);
+  assert.equal(hash(),answered);matchNative('qf4fqf');
+  let branch='qf4fqf';
+  for(const action of '1235666789'){call('press',action);branch+=action;}
+  assert.match(text(),/DOES NOT FIT/);matchNative(branch);
+  call('press','8');call('press','8');call('press','9');branch+='889';
+  assert.match(text(),/CASE CLOSED/);assert.match(text(),/SHE KEPT NOTHING/);matchNative(branch);
+  const revised=hash();call('click','#replay');
+  call('wait','--fn',`document.querySelector('#status').textContent.startsWith('Replay verified')`);
+  assert.equal(hash(),revised);
+  call('screenshot',`build/mystery-followup-${w}.png`);
+  call('click','#replay');call('click','#restart');call('wait','650');
+  assert.match(text(),/Q LOCKED/);matchNative('');
+ }
  const before=hash();click(0,190);assert.equal(hash(),before);
  assert.deepEqual(JSON.parse(call('errors','--json')).data.errors,[]);
- console.log('Mystery browser passed: real object clicks, keyboard and buttons, native pixel parity, wrong-answer revision and three-relation inference, replay/reset, seven responsive sizes and no page errors.');
+ console.log('Mystery browser passed: real object clicks, keyboard and buttons, native pixel parity, discovery-gated follow-up, changed accepted conclusion and duplicate suppression, replay/reset, seven responsive sizes and no page errors.');
 }finally{call('close');}

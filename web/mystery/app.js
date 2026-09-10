@@ -109,6 +109,9 @@
       if (/^[1-9]$/.test(e.key)) {
         e.preventDefault();
         act(() => m._mystery_action(Number(e.key)));
+      } else if (e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        act(() => m._mystery_action(10));
       } else if (e.key.toLowerCase() === 'r') {
         e.preventDefault();
         play();

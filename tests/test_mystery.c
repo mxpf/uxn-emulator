@@ -38,15 +38,24 @@ static void dispose(MysterySession *s) {
 /* Independent model: authored facts/solution intentionally not read from the
  * ROM. */
 typedef struct {
-  unsigned facts, choice[3], message;
+  unsigned facts, choice[3], message, question;
   bool key, ended;
 } Model;
 static void model_action(Model *m, unsigned a) {
   static const unsigned masks[] = {1, 2, 4, 24, 32};
   if (m->ended)
     return;
+  if (a == 10) {
+    if (m->question == 1) {
+      m->question = 2;
+      m->message = 11;
+    }
+    return;
+  }
   if (a <= 5) {
     m->facts |= masks[a - 1];
+    if (a == 4 && !m->question)
+      m->question = 1;
     m->message = a;
     if (a == 3)
       m->key = true;
@@ -58,10 +67,11 @@ static void model_action(Model *m, unsigned a) {
     m->message = 7;
   else if (!m->choice[0] || !m->choice[1] || !m->choice[2])
     m->message = 8;
-  else if (m->choice[0] != 3 || m->choice[1] != 1 || m->choice[2] != 1)
+  else if (m->choice[0] != 3 || m->choice[1] != 1 ||
+           m->choice[2] != (m->question == 2 ? 3u : 1u))
     m->message = 9;
   else {
-    m->message = 10;
+    m->message = m->question == 2 ? 12 : 10;
     m->ended = true;
   }
 }
@@ -74,6 +84,8 @@ static void step(MysterySession *s, Model *m, unsigned a) {
   CHECK(p[0] == m->message && p[1] == m->facts && p[5] == m->ended);
   CHECK(d[0] == m->key && d[1] == m->ended && d[2] == 0);
   CHECK(k[0] == m->facts);
+  CHECK(p[6] == m->question && d[3] == m->question);
+  CHECK(k[5] == (m->question == 2));
   for (unsigned i = 0; i < 3; i++) {
     CHECK(p[i + 2] == m->choice[i] && k[i + 1] == m->choice[i]);
     CHECK(!s->live->runner.host.nodes[i].uxn.working.pointer);
@@ -85,23 +97,26 @@ static void exhaustive(void) {
      Includes all 27 complete combinations; exactly one can win with all facts.
    */
   unsigned wins = 0;
-  for (unsigned subset = 0; subset < 32; subset++)
-    for (unsigned combination = 0; combination < 64; combination++) {
-      MysterySession *s = fresh();
-      Model m = {0};
-      for (unsigned a = 1; a <= 5; a++)
-        if (subset & (1u << (a - 1)))
-          step(s, &m, a);
-      unsigned code = combination;
-      for (unsigned field = 0; field < 3; field++, code >>= 2)
-        for (unsigned n = 0; n < (code & 3); n++)
-          step(s, &m, field + 6);
-      step(s, &m, 9);
-      wins += m.ended;
-      replay(s);
-      dispose(s);
-    }
-  CHECK(wins == 1);
+  for (unsigned followup = 0; followup < 2; followup++)
+    for (unsigned subset = 0; subset < 32; subset++)
+      for (unsigned combination = 0; combination < 64; combination++) {
+        MysterySession *s = fresh();
+        Model m = {0};
+        for (unsigned a = 1; a <= 5; a++)
+          if (subset & (1u << (a - 1)))
+            step(s, &m, a);
+        if (followup)
+          step(s, &m, 10);
+        unsigned code = combination;
+        for (unsigned field = 0; field < 3; field++, code >>= 2)
+          for (unsigned n = 0; n < (code & 3); n++)
+            step(s, &m, field + 6);
+        step(s, &m, 9);
+        wins += m.ended;
+        replay(s);
+        dispose(s);
+      }
+  CHECK(wins == 2);
 }
 static void orders(unsigned *order, unsigned depth, unsigned used) {
   if (depth < 5) {
@@ -133,7 +148,38 @@ static void orders(unsigned *order, unsigned depth, unsigned used) {
   replay(s);
   replay(s);
   // Completed state stays completed for all actions.
-  for (unsigned a = 1; a <= 9; a++)
+  for (unsigned a = 1; a <= 10; a++)
+    step(s, &m, a);
+  replay(s);
+  dispose(s);
+  // Same evidence orders, but the desk enables a result that revises the
+  // answer.
+  s = fresh();
+  m = (Model){0};
+  step(s, &m, 10);
+  for (unsigned i = 0; i < 5; i++) {
+    step(s, &m, order[i]);
+    if (order[i] == 4) {
+      step(s, &m, 10);
+      CHECK(m.question == 2);
+      unsigned frames = s->live->frames;
+      step(s, &m, 10);
+      CHECK(s->live->frames == frames);
+    }
+  }
+  step(s, &m, 6);
+  step(s, &m, 6);
+  step(s, &m, 6);
+  step(s, &m, 7);
+  step(s, &m, 8);
+  step(s, &m, 9);
+  CHECK(!m.ended && m.message == 9);
+  step(s, &m, 8);
+  step(s, &m, 8);
+  step(s, &m, 9);
+  CHECK(m.ended && m.message == 12);
+  CHECK(strstr(s->live->text, "SHE KEPT NOTHING"));
+  for (unsigned a = 1; a <= 10; a++)
     step(s, &m, a);
   replay(s);
   dispose(s);
@@ -142,13 +188,13 @@ static void boundaries(void) {
   /* Left/top inclusive, right/bottom exclusive; the labels are not guessed by
    * JS. */
   const unsigned points[][3] = {
-      {14, 36, 1},  {62, 75, 1},   {63, 75, 0},   {13, 36, 0},
-      {136, 55, 2}, {173, 113, 2}, {174, 113, 5}, {80, 30, 3},
-      {135, 113, 3},{136, 113, 2}, {8, 76, 4},    {79, 113, 4},
-      {80, 113, 3}, {174, 26, 5},  {239, 113, 5}, {240, 113, 0},
-      {8, 114, 6},  {175, 123, 6}, {176, 123, 0}, {8, 124, 6},
-      {8, 134, 6},  {182, 114, 7}, {247, 143, 7}, {248, 143, 0},
-      {255, 191, 0}, {153,103,2}, {100,108,3}, {195,112,5}};
+      {14, 36, 1},   {62, 75, 1},   {63, 75, 0},   {13, 36, 0},   {136, 55, 2},
+      {173, 113, 2}, {174, 113, 5}, {80, 30, 3},   {135, 113, 3}, {136, 113, 2},
+      {8, 76, 4},    {79, 113, 4},  {80, 113, 3},  {174, 26, 5},  {239, 113, 5},
+      {240, 113, 0}, {8, 114, 6},   {175, 123, 6}, {176, 123, 0}, {8, 124, 6},
+      {8, 134, 6},   {182, 114, 7}, {247, 143, 7}, {248, 143, 0}, {174, 4, 0},
+      {247, 21, 0},  {248, 21, 0},  {173, 4, 0},   {174, 22, 0},  {255, 191, 0},
+      {153, 103, 2}, {100, 108, 3}, {195, 112, 5}};
   for (size_t i = 0; i < sizeof(points) / sizeof(*points); i++) {
     MysterySession *s = fresh();
     uint8_t in[] = {0, (uint8_t)points[i][0], (uint8_t)points[i][1]};
@@ -170,7 +216,7 @@ static void boundaries(void) {
     if (fault == 2)
       data[0] = 2;
     if (fault == 3)
-      data[1] = 10;
+      data[1] = 11;
     if (fault == 4)
       data[2] = 1;
     CHECK(routed_input(&s->live->runner.host, 7, data, length) ==
@@ -224,13 +270,13 @@ static void boundaries(void) {
 static void protocol(void) {
   // Invalid source, length, range and unsolicited verdicts are ignored.
   for (unsigned node = 0; node < 3; node++)
-    for (unsigned fault = 0; fault < 6; fault++) {
+    for (unsigned fault = 0; fault < 7; fault++) {
       MysterySession *s = fresh();
       RoutedNode *n = &s->live->runner.host.nodes[node];
       Uxn *u = &n->uxn;
       n->source = node == 0 ? 1 : node == 1 ? 2 : 1;
-      u->devices[0xd4] = node == 2 ? 1 : 6;
-      memset(u->ram + 0x800, 0, 6);
+      u->devices[0xd4] = node == 2 ? 1 : node == 0 ? 7 : 6;
+      memset(u->ram + 0x800, 0, 7);
       if (node == 2)
         u->ram[0x800] = 1;
       if (fault == 0)
@@ -257,6 +303,19 @@ static void protocol(void) {
         else if (node == 2)
           n->source = 0;
       }
+      if (fault == 6) {
+        if (node == 0)
+          u->ram[0x806] = 3;
+        else if (node == 1) {
+          n->source = 0;
+          u->devices[0xd4] = 1;
+          u->ram[0x800] = 10;
+        } else {
+          u->devices[0xd4] = 2;
+          u->ram[0x800] = 10;
+          u->ram[0x801] = 1;
+        }
+      }
       uint8_t before[256];
       memcpy(before, u->ram, 256);
       unsigned frames = s->live->frames;
@@ -267,6 +326,76 @@ static void protocol(void) {
       CHECK(routed_quiescent(&s->live->runner.host));
       dispose(s);
     }
+}
+static void rejected_message(MysterySession *s, unsigned node, unsigned source,
+                             const uint8_t *message, unsigned length) {
+  RoutedNode *n = &s->live->runner.host.nodes[node];
+  Uxn *u = &n->uxn;
+  uint8_t before[256];
+  memcpy(before, u->ram, sizeof(before));
+  unsigned frames = s->live->frames;
+  n->source = source;
+  u->devices[0xd4] = (uint8_t)length;
+  memcpy(u->ram + 0x800, message, length);
+  CHECK(uxn_eval(u, ((unsigned)u->devices[0xd0] << 8) | u->devices[0xd1],
+                 10000) == UXN_STOP_BREAK);
+  CHECK(!memcmp(before, u->ram, sizeof(before)));
+  CHECK(frames == s->live->frames);
+  CHECK(!u->working.pointer && !u->return_stack.pointer);
+  CHECK(routed_quiescent(&s->live->runner.host));
+}
+static void conditional_protocol(void) {
+  const uint8_t request[] = {10}, result[] = {10, 1};
+  const uint8_t wrong_tag[] = {11, 1}, wrong_value[] = {10, 2};
+  MysterySession *s = fresh();
+  Model m = {0};
+  rejected_message(s, 1, 0, request, 1);
+  rejected_message(s, 2, 1, result,
+                   2); // Correct shape but prerequisite missing.
+  step(s, &m, 4);
+  rejected_message(s, 2, 0, result, 2);
+  rejected_message(s, 2, 1, result, 1);
+  rejected_message(s, 2, 1, wrong_tag, 2);
+  rejected_message(s, 2, 1, wrong_value, 2);
+  step(s, &m, 10);
+  rejected_message(s, 1, 0, request, 1);
+  rejected_message(s, 2, 1, result, 2); // Already applied: no second result.
+  dispose(s); // Direct injections are deliberately not part of session replay.
+
+  // Actual canvas input follows the identical gate and replays exactly.
+  s = fresh();
+  uint8_t click[] = {0, 200, 12};
+  unsigned frames = s->live->frames;
+  CHECK(mystery_input(s, click));
+  CHECK(s->live->frames == frames);
+  key(s, 4);
+  CHECK(mystery_input(s, click));
+  CHECK(s->live->runner.host.nodes[0].uxn.ram[6] == 2);
+  frames = s->live->frames;
+  CHECK(mystery_input(s, click));
+  CHECK(s->live->frames == frames);
+  replay(s);
+  dispose(s);
+
+  // Measure the accepted follow-up against an ordinary discovery.
+  s = fresh();
+  unsigned turns = s->live->turns;
+  size_t events = s->event_count;
+  key(s, 4);
+  printf("Desk discovery: %u turns, %zu trace events. ", s->live->turns - turns,
+         s->event_count - events);
+  turns = s->live->turns;
+  events = s->event_count;
+  key(s, 10);
+  printf("Follow-up: %u turns, %zu trace events. ", s->live->turns - turns,
+         s->event_count - events);
+  turns = s->live->turns;
+  events = s->event_count;
+  key(s, 10);
+  printf("Duplicate: %u turns, %zu trace events.\n", s->live->turns - turns,
+         s->event_count - events);
+  replay(s);
+  dispose(s);
 }
 int main(void) {
   MysterySession *s = fresh();
@@ -296,7 +425,7 @@ int main(void) {
     unsigned seed = 17 + trial;
     for (unsigned i = 0; i < 100; i++) {
       seed = seed * 1664525u + 1013904223u;
-      step(s, &m, (seed >> 16) % 9 + 1);
+      step(s, &m, (seed >> 16) % 10 + 1);
     }
     replay(s);
     dispose(s);
@@ -315,7 +444,8 @@ int main(void) {
   orders(order, 0, 0);
   boundaries();
   protocol();
-  printf("%u mystery checks passed: 2048 evidence/hypothesis combinations, 120 "
+  conditional_protocol();
+  printf("%u mystery checks passed: 4096 evidence/hypothesis branches, 120 "
          "discovery orders, revisions, invalid protocols, recording bounds and "
          "exact replay.\n",
          checks);
