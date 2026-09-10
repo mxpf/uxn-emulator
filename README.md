@@ -84,8 +84,10 @@ Run the complete offline build and test suite:
 make check
 ```
 
-This performs 200 processor and device checks, then runs a small graphical ROM
-without opening a visible window.
+This performs 234 processor and device checks, then runs a small graphical ROM
+without opening a visible window. One check uses a ROM file that crosses from
+bank zero into bank one, copies known bank-one data back through the existing
+System expansion device, and compares the guest's exact output.
 
 When an internet connection is available, compare the emulator with current
 official tests and real Hundred Rabbits programs:
