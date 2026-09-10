@@ -84,15 +84,18 @@ Run the complete offline build and test suite:
 make check
 ```
 
-This performs 411 processor and device checks, then runs a small graphical ROM
-without opening a visible window. One check uses a ROM file that crosses from
-bank zero into bank one, copies known bank-one data back through the existing
-System expansion device, and compares the guest's exact output. Another check
-interleaves the two File devices and compares their separate files and read
-positions exactly. The Audio checks run each of the four voices separately at
-exact sample positions, then combine three voices to check basic mixing and
-separate left and right volume. The System checks cover fill, both copy
-directions, bank-edge limits, stack pointers, and exact debug output.
+This performs 411 processor and device checks and 56 SDL host-input checks,
+then runs a small graphical ROM without opening a visible window. One check
+uses a ROM file that crosses from bank zero into bank one, copies known
+bank-one data back through the existing System expansion device, and compares
+the guest's exact output. Another check interleaves the two File devices and
+compares their separate files and read positions exactly. The Audio checks run
+each of the four voices separately at exact sample positions, then combine
+three voices to check basic mixing and separate left and right volume. The
+System checks cover fill, both copy directions, bank-edge limits, stack
+pointers, and exact debug output. The SDL checks send Return, left Shift,
+mouse movement, and left-button events through the same host event handler
+used by `uxnemu`, then have a tiny ROM record the exact values it receives.
 
 When an internet connection is available, compare the emulator with current
 official tests and real Hundred Rabbits programs:

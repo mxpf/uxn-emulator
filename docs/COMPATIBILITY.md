@@ -13,8 +13,9 @@ Run:
 make check
 ~~~
 
-This builds both runners, performs 411 local checks, opens the included pixel
-ROM with SDL2's headless video and audio drivers, and saves a screenshot.
+This builds both runners, performs 411 processor and device checks plus 56 SDL
+host-input checks, opens the included pixel ROM with SDL2's headless video and
+audio drivers, and saves a screenshot.
 
 The local checks cover instruction modes, stack and memory wraparound, all
 three System expansion commands, System stack and debug registers, Console,
@@ -55,6 +56,17 @@ separate check starts two left-only voices and one right-only voice, confirms
 that starting one does not change the others, and compares the exact mixed
 left and right samples. These checks do not cover every pitch, envelope, loop,
 sample rate, clipping case, or SDL audio-queue behavior.
+
+The SDL host-input check pushes events through SDL's event queue, polls them,
+and passes them to the production `uxnemu` event handler. A tiny ROM records
+the Controller and Mouse values during each device callback. Return produces
+key byte `0a` for one callback and the key port is then cleared. Left Shift
+produces button byte `04` on key-down and `00` on key-up. Mouse motion to
+`37,19` produces the exact coordinates `0025,0013`; left-button down and up
+produce state bytes `01` and `00`. This establishes those host mappings, not
+printable text input, scrolling, gamepads, key repeat, all keys or buttons,
+UTF-8 completeness, high-DPI/fullscreen coordinates, browser input, or
+Constellation input routing.
 
 ## Current upstream checks
 
