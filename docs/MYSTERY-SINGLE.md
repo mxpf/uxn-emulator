@@ -39,6 +39,10 @@ The previous implementation and corrected direction were checkpointed locally
 in commit `65a8bd3`. The reference is a separate addition, not a replacement
 of that checkpoint.
 
+The next [data-defined question experiment](MYSTERY-RULES.md) is now available.
+It adds one prerequisite/consequence record without changing the host. The
+measurements below describe the reference at checkpoint `1e867ea`.
+
 ## Measured scenario
 
 The same 18-input script, `q12345qq666789889q`, exercises an early question,
@@ -110,10 +114,11 @@ does not change the public carousel or the original mystery page on port 8770.
 
 ## Next decision
 
-Use the one-ROM control for the independently editable content experiment.
-Measure whether loading a validated separate payload adds genuine authoring
-value over the existing compile-time JSON. Keep replay tied to the exact
-content and executable; keep interpretation in the cartridge.
+The [data-defined question experiment](MYSTERY-RULES.md) now demonstrates that
+one gate and its consequence can vary as authored data with identical executable
+code. It does not need a separate loader. Consider independent content delivery
+only for a demonstrated authoring or distribution benefit; keep replay tied to
+the exact content and executable, and interpretation in the cartridge.
 
 Do not add platform abstractions or grow the game differently in each candidate
 to force a winner. Finish the cartridge in the simplest credible design.

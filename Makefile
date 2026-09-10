@@ -347,7 +347,7 @@ clean:
 	rm -rf bin build
 
 # Behavior-equivalent one-machine control. Existing three-ROM targets stay intact.
-build/mystery-single.tal: examples/mystery-single.tal examples/mystery-presentation.tal examples/mystery-room.json tools/build_mystery.cjs | build
+build/mystery-single.tal: examples/mystery-single.tal examples/mystery-presentation.tal examples/mystery-room.json examples/mystery-question-returned.json tools/build_mystery.cjs | build
 	node tools/build_mystery.cjs $@
 build/mystery-single.rom: build/mystery-single.tal $(ASSEMBLER_ROM) $(BIN)
 	./$(BIN) $(ASSEMBLER_ROM) $< $@
@@ -389,3 +389,44 @@ build/test_mystery_compare: tests/test_mystery_compare.c $(MYSTERY_SOURCES) incl
 .PHONY: mystery-compare-check
 mystery-compare-check: build/test_mystery_compare $(MYSTERY_ROMS) build/mystery-single.rom
 	./build/test_mystery_compare
+
+# Same executable code, a second authored question rule and answer.
+build/mystery-single-retained.tal: examples/mystery-single.tal examples/mystery-presentation.tal examples/mystery-room.json examples/mystery-question-retained.json tools/build_mystery.cjs | build
+	node tools/build_mystery.cjs $@ examples/mystery-question-retained.json
+build/mystery-single-retained.rom: build/mystery-single-retained.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+
+build/test_mystery_rules: tests/test_mystery_rules.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/test_mystery_rules.c $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-rules-check
+mystery-rules-check: build/test_mystery_rules build/mystery-single.rom build/mystery-single-retained.rom
+	node tests/mystery_rules_check.cjs
+
+.PHONY: mystery-rules-sanitize
+mystery-rules-sanitize: build/mystery-single.rom build/mystery-single-retained.rom
+	$(CC) $(CPPFLAGS) -std=c11 -Wall -Wextra -Wpedantic -Werror -O1 -g -fsanitize=address,undefined -DMYSTERY_DEFAULT_SINGLE=1 tests/test_mystery_rules.c $(MYSTERY_SOURCES) -o build/test_mystery_rules_sanitize
+	MYSTERY_RULE_TEST=./build/test_mystery_rules_sanitize node tests/mystery_rules_check.cjs
+
+.PHONY: mystery-rules-web mystery-rules-web-check
+mystery-rules-web: mystery-single-web build/mystery-single-retained.rom
+	mkdir -p build/mystery-retained-web build/mystery-single-check build/mystery-retained-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-single-retained.rom@build/mystery-single.rom -o build/mystery-retained-web/mystery.js
+	cp web/mystery/index.html web/mystery/style.css web/mystery/app.js web/fonts.css build/mystery-retained-web/
+	mkdir -p build/mystery-retained-web/fonts
+	cp web/fonts/orbitron-latin.woff2 web/fonts/OFL-Orbitron.txt build/mystery-retained-web/fonts/
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/mystery_probe.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-single.rom -o build/mystery-single-check/mystery.js
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/mystery_probe.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-single-retained.rom@build/mystery-single.rom -o build/mystery-retained-check/mystery.js
+mystery-rules-web-check: mystery-rules-web build/mystery_single_probe
+	node tests/mystery_rules_web_check.cjs

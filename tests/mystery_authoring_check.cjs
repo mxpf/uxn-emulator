@@ -3,6 +3,7 @@ const {spawnSync}=require('node:child_process');
 const root=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'mystery-authoring-'));
 fs.mkdirSync(path.join(temp,'examples'));fs.mkdirSync(path.join(temp,'build'));
 for(const name of ['presentation','deduction','single']) fs.copyFileSync(`examples/mystery-${name}.tal`,path.join(temp,`examples/mystery-${name}.tal`));
+fs.copyFileSync('examples/mystery-question-returned.json',path.join(temp,'examples/mystery-question-returned.json'));
 const data=JSON.parse(fs.readFileSync('examples/mystery-room.json','utf8'));
 const compile=(variant,target)=>{
  fs.writeFileSync(path.join(temp,'examples/mystery-room.json'),JSON.stringify(variant));

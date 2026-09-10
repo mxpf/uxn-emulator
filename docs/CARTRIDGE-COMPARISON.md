@@ -49,6 +49,11 @@ machine count without changing host devices. It is not yet the banked Varvara
 candidate or the independently loaded data candidate. The initial measurements
 favor one ROM for this mystery; the three-ROM version remains available.
 
+A subsequent [data-defined interaction test](MYSTERY-RULES.md) varies one gate
+and consequence with identical executable bytes. This improves authoring within
+embedded data; separately loaded content is still unimplemented and must justify
+its additional delivery/validation machinery.
+
 ## Milestone and immediate step
 
 The milestone is one complete, substantially expressive mystery cartridge:

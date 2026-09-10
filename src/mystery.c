@@ -199,7 +199,9 @@ static bool consume(MysterySession *s, MysteryMachine *m, bool replay) {
   if (m->failed || m->runner.host.fault != ROUTED_OK)
     return fail(s, "Mystery drawing or execution failed.");
   for (size_t i = 0; i < m->runner.host.node_count; i++)
-    if (m->runner.host.nodes[i].uxn.ram[0xfe])
+    if (m->runner.host.nodes[i].uxn.ram[0xfe] == 2)
+      return fail(s, "Mystery cartridge rule data is invalid.");
+    else if (m->runner.host.nodes[i].uxn.ram[0xfe])
       return fail(s, "Mystery message could not be sent.");
   RoutedEvent batch[CONSTELLATION_TRACE_CAPACITY];
   size_t n;
