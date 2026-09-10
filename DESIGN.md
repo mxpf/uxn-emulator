@@ -1,42 +1,77 @@
 # Design promise
 
-This emulator has two jobs: run Uxn programs and remain small enough to learn
-from. A feature that weakens either job needs a very good reason to exist.
+The current Uxn emulator has two jobs: run Uxn programs and remain small enough
+to learn from. A feature that weakens either job needs a very good reason to exist.
 
 ## Constellation's north star
 
-“Constellation is an experimental computer built from compatible Uxn machines,
-designed to discover how sophisticated, expressive, and durable software can
-become without sacrificing small understandable parts.”
+**Ambitious software, small permanent machine.**
 
-One machine is a valid design. Multiple machines are an evaluated option, not
-the project's identity or a required destination. Preserve the routing,
-scheduling, bounded queues, external-input and replay experiments as tested
-infrastructure; their existence does not oblige applications to use them.
+Constellation aims to become the best ambitious, durable game system we can
+make while preserving the qualities exemplified by Uxn. Narrative investigation
+is the current leading creative proving ground, not a restriction on future
+game genres. Uxn remains the current foundation and preferred starting point:
+no experiment has demonstrated a Uxn-level limitation requiring change.
 
-The next milestone is a sophisticated, complete cartridge experiment, not more
-platform machinery in isolation. Prefer the simplest credible architecture.
-Promote cooperation only when it materially improves authoring, isolation,
-replaceability, causal inspection/replay, or enables otherwise unavailable
-behavior at an acceptable cost. Rearranging code is not enough.
+The permanent execution contract should be small enough to understand and
+independently reimplement, completely and publicly specifiable, and operationally
+testable. Preserve deterministic replay and deterministic execution wherever
+game-visible behavior depends on it, with bounded, explicit memory, input,
+resources and communication. Self-contained cartridges should run without
+required accounts, cloud APIs, package registries,
+proprietary services or runtime network dependencies. Preserve portability by
+reimplementing the small machine/runtime, not repeatedly porting software through
+changing frameworks. Keep most complexity in software and authored content,
+rather than accumulating it indefinitely in the permanent machine.
 
-The Uxn core stays compatible and unchanged. Bounded behavior, deterministic
-replay, portability and understandable parts remain requirements. Room,
-character and deduction rules belong to cartridges, never the generic host.
-See [the mystery architecture comparison](docs/CARTRIDGE-COMPARISON.md) for the
-current assessment and the next bounded experiment.
+One machine is a valid design; no general single-ROM default has been adopted.
+Multiple machines are an available technique, not the project's identity or a
+required destination. A boundary must earn its cost through demonstrated
+application value. Private state, conceptual separation and implementation
+convenience alone are insufficient. Preserve the routing, scheduling, bounded
+queues, external-input and replay experiments as tested infrastructure; their
+existence does not oblige applications to use them.
 
-## Keep the center fixed
+Room, character and deduction rules belong to cartridges, never the generic
+host. Repository experiment reports, including
+[the mystery architecture comparison](docs/CARTRIDGE-COMPARISON.md), are
+implementation evidence and history, not standing instructions for future work.
+Constellation — Project Home selects future work using the authoritative durable
+direction in kDrive:
+`/Private/03 Projects/Uxn Emulator/Constellation Narrative Game System Design.md`.
+This file is its concise implementation-facing companion, not a separate roadmap.
+
+## Current Uxn compatibility contract
 
 The Uxn processor gives every ROM the same instructions, stacks, and memory.
 Varvara gives it the standard screen, sound, input, file, console, and clock
-devices. We do not add opcodes, enlarge addresses, or quietly change what a
-ROM means. That fixed center is what lets the same ROM travel between different
-emulators.
+devices. Current work keeps Uxn unchanged: no added opcodes, enlarged addresses,
+or silent changes to ordinary ROM behavior. That fixed contract lets the same
+ROM travel between emulators. Evaluating a hypothetical successor is separate
+from breaking this existing Uxn/Varvara compatibility contract.
 
 The host layer is allowed to translate those standard ideas into a real window,
 speakers, keyboard, mouse, and files. Optional conveniences belong here, where
 they cannot leak into the virtual machine.
+
+## Classify limitations before expanding the contract
+
+Before expanding the permanent execution contract, determine where a demonstrated
+game limitation belongs:
+
+1. Cartridge/application
+2. Authoring/tooling
+3. Constellation runtime or host
+4. Varvara/device model
+5. Uxn itself
+
+Only the fifth category warrants evaluating changes to or replacement of Uxn,
+and only if actual game development demonstrates a fundamental and recurring
+Uxn-level limitation. Implementation inconvenience alone is insufficient.
+Unchanged Uxn is the current rule, not an eternal prohibition on reconsideration.
+Any extension or small successor execution contract would have to preserve the
+durability principles above. None is selected or designed here, and the evidence
+does not establish that Uxn has been outgrown.
 
 ## The four enhancement lanes
 
