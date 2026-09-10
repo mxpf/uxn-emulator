@@ -138,18 +138,22 @@ static void release(MysteryMachine *m) {
     free(m);
   }
 }
-static MysteryMachine *machine(char *error, size_t capacity) {
+static MysteryMachine *machine(char *error, size_t capacity,
+                               MysteryVariant variant) {
   MysteryMachine *m = calloc(1, sizeof(*m));
   uint8_t *buffers[3] = {0};
   RunnerRom roms[3] = {{0}};
   const char *paths[] = {"build/mystery-presentation.rom",
                          "build/mystery-director.rom",
                          "build/mystery-deduction.rom"};
+  unsigned node_count = variant == MYSTERY_SINGLE ? 1 : 3;
+  if (variant == MYSTERY_SINGLE)
+    paths[0] = "build/mystery-single.rom";
   if (!m) {
     snprintf(error, capacity, "Cannot allocate mystery.");
     return NULL;
   }
-  for (unsigned i = 0; i < 3; i++) {
+  for (unsigned i = 0; i < node_count; i++) {
     buffers[i] = malloc(UXN_RAM_SIZE - UXN_ROM_START + 1);
     if (!buffers[i]) {
       snprintf(error, capacity, "Cannot allocate ROM.");
@@ -174,17 +178,19 @@ static MysteryMachine *machine(char *error, size_t capacity) {
   const RoutedRoute routes[] = {
       {ROUTED_NONE, 7, 0}, {0, 1, 1}, {1, 1, 0}, {1, 2, 2}, {2, 1, 1}};
   const RunnerDevice device = {0, 0x25, 0x25, NULL, display, m};
-  const RunnerDefinition definition = {roms, 3, routes, 5, &device, 1, 10000};
+  const RunnerDefinition definition = {
+      roms,    node_count, routes, variant == MYSTERY_SINGLE ? 1 : 5,
+      &device, 1,          10000};
   RunnerDiagnostic diagnostic;
   if (!runner_start(&m->runner, &definition, &diagnostic)) {
     snprintf(error, capacity, "%s", runner_diagnostic_text(&diagnostic));
     goto bad;
   }
-  for (unsigned i = 0; i < 3; i++)
+  for (unsigned i = 0; i < node_count; i++)
     free(buffers[i]);
   return m;
 bad:
-  for (unsigned i = 0; i < 3; i++)
+  for (unsigned i = 0; i < node_count; i++)
     free(buffers[i]);
   release(m);
   return NULL;
@@ -192,7 +198,7 @@ bad:
 static bool consume(MysterySession *s, MysteryMachine *m, bool replay) {
   if (m->failed || m->runner.host.fault != ROUTED_OK)
     return fail(s, "Mystery drawing or execution failed.");
-  for (unsigned i = 0; i < 3; i++)
+  for (size_t i = 0; i < m->runner.host.node_count; i++)
     if (m->runner.host.nodes[i].uxn.ram[0xfe])
       return fail(s, "Mystery message could not be sent.");
   RoutedEvent batch[CONSTELLATION_TRACE_CAPACITY];
@@ -226,10 +232,16 @@ static bool settle(MysterySession *s, MysteryMachine *m, bool replay) {
   return true;
 }
 bool mystery_init(MysterySession *s) {
-  if (!s || s->live || s->play)
+  return mystery_init_variant(s, MYSTERY_DEFAULT_SINGLE ? MYSTERY_SINGLE
+                                                        : MYSTERY_COOPERATING);
+}
+bool mystery_init_variant(MysterySession *s, MysteryVariant variant) {
+  if (!s || s->live || s->play ||
+      (variant != MYSTERY_SINGLE && variant != MYSTERY_COOPERATING))
     return false;
   memset(s, 0, sizeof(*s));
-  s->live = machine(s->error, sizeof(s->error));
+  s->variant = variant;
+  s->live = machine(s->error, sizeof(s->error), variant);
   if (!s->live) {
     s->failed = true;
     return false;
@@ -297,7 +309,7 @@ bool mystery_replay_begin(MysterySession *s) {
   if (!s || !s->live || s->failed || s->replaying)
     return false;
   release(s->play);
-  s->play = machine(s->error, sizeof(s->error));
+  s->play = machine(s->error, sizeof(s->error), s->variant);
   s->play_event = s->play_input = 0;
   s->replay_done = false;
   if (!s->play) {

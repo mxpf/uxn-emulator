@@ -153,6 +153,8 @@ and validation guarantees; this does not add filesystem access to the emulator.
   through explicit cartridge messages, without shared-runtime changes.
   Run `make mystery` or build the private
   browser preview with `make mystery-web`; it is not in the public collection.
+  The [single-ROM control](docs/MYSTERY-SINGLE.md) runs the same mystery with
+  `make mystery-single`; `make mystery-compare-check` compares both designs.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.

@@ -14,6 +14,10 @@ The current clue revision identifies visitors through genuine seals, connects
 an unnamed key handover to entry order, and replaces the explicit receipt with
 a torn-paper match. It changes cartridge prose only, not the room or runtime.
 
+A separate [single-ROM reference](MYSTERY-SINGLE.md) now reproduces the same
+behavior for a controlled architecture comparison. This guide's original
+commands still select the three-ROM version.
+
 ## Play
 
 ```sh

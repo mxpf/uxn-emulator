@@ -73,6 +73,7 @@ static void machine_hash(uint64_t *h, const MysteryMachine *m) {
 EXPORT const char *mystery_digest(void) {
   static char out[32];
   uint64_t h = UINT64_C(14695981039346656037);
+  number(&h, session.variant);
   machine_hash(&h, session.live);
   machine_hash(&h, session.play);
   number(&h, session.count);

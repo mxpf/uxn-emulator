@@ -2,11 +2,11 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),asse
 const {spawnSync}=require('node:child_process');
 const root=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'mystery-authoring-'));
 fs.mkdirSync(path.join(temp,'examples'));fs.mkdirSync(path.join(temp,'build'));
-for(const name of ['presentation','deduction']) fs.copyFileSync(`examples/mystery-${name}.tal`,path.join(temp,`examples/mystery-${name}.tal`));
+for(const name of ['presentation','deduction','single']) fs.copyFileSync(`examples/mystery-${name}.tal`,path.join(temp,`examples/mystery-${name}.tal`));
 const data=JSON.parse(fs.readFileSync('examples/mystery-room.json','utf8'));
-const compile=variant=>{
+const compile=(variant,target)=>{
  fs.writeFileSync(path.join(temp,'examples/mystery-room.json'),JSON.stringify(variant));
- return spawnSync(process.execPath,[path.join(root,'tools/build_mystery.cjs')],{cwd:temp,encoding:'utf8'});
+ return spawnSync(process.execPath,[path.join(root,'tools/build_mystery.cjs'),...(target?[target]:[])],{cwd:temp,encoding:'utf8'});
 };
 const revised=structuredClone(data);revised.messages[0]='RAIN TAPS AGAINST THE WINDOW.\nTHE STUDY IS LOCKED.';
 assert.equal(compile(revised).status,0);
@@ -28,3 +28,16 @@ const newRule=fs.readFileSync(path.join(temp,'build/revised-deduction.rom')),old
 assert.deepEqual(newRule.subarray(0,-7),oldRule.subarray(0,-7));
 assert.deepEqual([...newRule.subarray(-7,-1)],[1,2,3,2,3,1]);
 console.log('Authored solution also changes without host or deduction-code edits.');
+
+const revisedSingle=structuredClone(data);
+revisedSingle.messages[0]='A CHANGED ACCOUNT.';
+revisedSingle.solution=[1,2,3];revisedSingle.followupSolution=[2,3,1];
+assert.equal(compile(revisedSingle,'build/mystery-single.tal').status,0);
+const singleAssembly=spawnSync(path.join(root,'bin/uxncli'),[path.join(root,'build/drifblim.rom'),'build/mystery-single.tal','build/revised-single.rom'],{cwd:temp,encoding:'utf8'});
+assert.equal(singleAssembly.status,0,singleAssembly.stderr);
+const single=fs.readFileSync(path.join(temp,'build/revised-single.rom')),oldSingle=fs.readFileSync('build/mystery-single.rom');
+assert.deepEqual(single.subarray(0,0xe00),oldSingle.subarray(0,0xe00),'Single-ROM executable/input space stays unchanged when prose and solutions change.');
+assert.ok(oldSingle.subarray(0x700,0xe00).every(b=>b===0),'Single-ROM code must not overlap input space.');
+assert.deepEqual([...single.subarray(0xe00,0xe0b)],[...data.evidenceMasks,1,2,3,2,3,1]);
+assert.ok(single.includes(Buffer.from(revisedSingle.messages[0])));
+console.log('Single-ROM prose and both solutions change as data, with identical executable code.');

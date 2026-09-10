@@ -15,7 +15,12 @@ typedef struct {
   unsigned frames, turns;
   bool failed;
 } MysteryMachine;
+typedef enum { MYSTERY_COOPERATING, MYSTERY_SINGLE } MysteryVariant;
+#ifndef MYSTERY_DEFAULT_SINGLE
+#define MYSTERY_DEFAULT_SINGLE 0
+#endif
 typedef struct {
+  MysteryVariant variant;
   MysteryMachine *live, *play;
   uint8_t inputs[MYSTERY_INPUTS][3];
   RoutedEvent events[MYSTERY_EVENTS];
@@ -25,6 +30,7 @@ typedef struct {
 } MysterySession;
 /* Only zero/freed session storage. ROMs and display are cartridge-local. */
 bool mystery_init(MysterySession *s);
+bool mystery_init_variant(MysterySession *s, MysteryVariant variant);
 void mystery_free(MysterySession *s);
 bool mystery_input(MysterySession *s, const uint8_t input[3]);
 bool mystery_replay_begin(MysterySession *s);

@@ -42,14 +42,23 @@ for (const r of data.hotspots) {
 assert.equal(actions.size, 5);
 // Four hypothesis controls and an optional question, separate from story objects.
 const hotspots = [...data.hotspots, [8,114,176,124,6], [8,124,176,134,7], [8,134,176,144,8], [182,114,248,144,9], [174,4,248,22,10]];
-let out = fs.readFileSync('examples/mystery-presentation.tal', 'utf8') + '\n|1000\n';
+const target = process.argv[2];
+const presentation = fs.readFileSync('examples/mystery-presentation.tal', 'utf8');
+const single = target === 'build/mystery-single.tal';
+const rules = '\n@evidence ' + data.evidenceMasks.map(hex).join(' ') +
+ '\n@solution ' + data.solution.map(hex).join(' ') +
+ '\n@followup-solution ' + data.followupSolution.map(hex).join(' ') + '\n';
+const viewStart = presentation.indexOf('@paint\n');
+assert.ok(viewStart >= 0 && presentation.indexOf('@paint\n', viewStart + 1) < 0);
+let out = (single ? fs.readFileSync('examples/mystery-single.tal', 'utf8') +
+ '\n' + presentation.slice(viewStart) + '\n|0f00\n' + rules : presentation) + '\n|1000\n';
 out += '@rects\n' + data.rectangles.map(r => r.map(hex).join(' ')).join('\n') + '\n@rects-end\n';
 out += '@hotspots\n' + hotspots.map(r => r.map(hex).join(' ')).join('\n') + '\n@hotspots-end\n';
 let address = 0x1000 + data.rectangles.length*5 + hotspots.length*5 + strings.length*3;
 out += '@texts\n' + strings.map(s => { const row = hex(address>>8)+' '+hex(address&255)+' '+hex(s.length); address += s.length; return row; }).join('\n') + '\n';
 assert.ok(address < 65536);
 out += strings.map(s => Array.from(Buffer.from(s)).map(hex).join(' ')).join('\n') + '\n';
-const target = process.argv[2];
-assert.ok(!target || ['build/mystery-presentation.tal', 'build/mystery-deduction.tal'].includes(target));
-if (!target || target === 'build/mystery-presentation.tal') fs.writeFileSync('build/mystery-presentation.tal', out);
-if (!target || target === 'build/mystery-deduction.tal') fs.writeFileSync('build/mystery-deduction.tal', fs.readFileSync('examples/mystery-deduction.tal', 'utf8') + '\n@evidence ' + data.evidenceMasks.map(hex).join(' ') + '\n@solution ' + data.solution.map(hex).join(' ') + '\n@followup-solution ' + data.followupSolution.map(hex).join(' ') + '\n');
+assert.ok(!target || ['build/mystery-presentation.tal', 'build/mystery-deduction.tal', 'build/mystery-single.tal'].includes(target));
+if (single) fs.writeFileSync(target, out);
+else if (!target || target === 'build/mystery-presentation.tal') fs.writeFileSync('build/mystery-presentation.tal', out);
+if (!target || target === 'build/mystery-deduction.tal') fs.writeFileSync('build/mystery-deduction.tal', fs.readFileSync('examples/mystery-deduction.tal', 'utf8') + rules);

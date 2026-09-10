@@ -3,7 +3,7 @@ const call=(...args)=>execFileSync('agent-browser',['--session',`mystery-check-$
 const evaluate=js=>{const r=JSON.parse(call('eval',js,'--json'));assert.equal(r.success,true,JSON.stringify(r.error));return r.data.result;};
 const text=()=>evaluate(`document.querySelector('#narration').textContent`);
 const hash=()=>evaluate(`(async()=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',document.querySelector('canvas').getContext('2d').getImageData(0,0,256,192).data))).map(n=>n.toString(16).padStart(2,'0')).join(''))()`);
-const matchNative=script=>{const r=spawnSync('./build/mystery_probe',['--pixels',script],{maxBuffer:1024*1024});assert.equal(r.status,0);assert.equal(hash(),crypto.createHash('sha256').update(r.stdout).digest('hex'));};
+const matchNative=script=>{const r=spawnSync(process.argv[3] || './build/mystery_probe',['--pixels',script],{maxBuffer:1024*1024});assert.equal(r.status,0);assert.equal(hash(),crypto.createHash('sha256').update(r.stdout).digest('hex'));};
 const click=(x,y)=>{const point=evaluate(`(()=>{const r=document.querySelector('canvas').getBoundingClientRect();return [r.x+${x}*r.width/256,r.y+${y}*r.height/192]})()`);call('mouse','move',...point.map(n=>String(Math.round(n))));call('mouse','down');call('mouse','up');};
 try{
  call('open',process.argv[2]||'http://127.0.0.1:8770/');call('wait','--fn',`!document.querySelector('#replay').disabled`);call('snapshot','-i');

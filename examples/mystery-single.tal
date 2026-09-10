@@ -1,0 +1,71 @@
+( Single-machine reference. No inter-machine messages.
+  State: 00 message, 01 facts, 02-04 choices, 05 exit, 06 question, 07 key.
+  Input: external three-byte click or action at 0800. Private scratch at 08.
+  View code and authored resources are appended by the cartridge compiler. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2 !paint
+
+( Input and hit testing. The view does not decide story outcomes. )
+@receive
+ #dd DEI #ff NEQ ?done #d4 DEI #03 NEQ ?done
+ #0800 LDA #01 EQU ?key
+ #0800 LDA #00 NEQ ?done #0802 LDA #bf GTH ?done
+ ;hotspots
+ @hit-loop DUP2 ;hotspots-end EQU2 ?hit-miss
+ DUP2 LDA #0801 LDA GTH ?hit-next
+ DUP2 #0001 ADD2 LDA #0802 LDA GTH ?hit-next
+ DUP2 #0002 ADD2 LDA #0801 LDA GTH #00 EQU ?hit-next
+ DUP2 #0003 ADD2 LDA #0802 LDA GTH #00 EQU ?hit-next
+ #0004 ADD2 LDA !action
+ @hit-next #0005 ADD2 !hit-loop
+ @hit-miss POP2 BRK
+@key
+ #0802 LDA ?done
+ #0801 LDA #01 LTH ?done #0801 LDA #0a GTH ?done
+ #0801 LDA
+
+( Events update cartridge state. Ordinary terminal inputs redisplay;
+  unavailable or answered questions are ignored without a repaint. )
+@action
+ DUP #0a EQU ?question
+ #05 LDZ ?terminal
+ DUP #06 LTH ?observe
+ DUP #09 EQU ?conclude
+ #04 SUB DUP LDZ INC DUP #04 NEQ ?choice
+ POP #01
+ @choice SWP STZ #06 !message
+@terminal POP !paint
+@question
+ POP #05 LDZ ?done #06 LDZ #01 NEQ ?done
+ #02 #06 STZ #0b !message
+@observe
+ DUP #03 NEQ ?no-key #01 #07 STZ
+ @no-key DUP #01 SUB #00 SWP ;evidence ADD2 LDA
+ #01 LDZ ORA #01 STZ
+ #06 LDZ ?no-question
+ #01 LDZ #18 AND #18 NEQ ?no-question #01 #06 STZ
+ @no-question !message
+
+( State-dependent deduction. Both solutions are authored data. )
+@conclude
+ POP
+ #01 LDZ #3f NEQ ?missing
+ #02 LDZ #00 EQU ?incomplete
+ #03 LDZ #00 EQU ?incomplete
+ #04 LDZ #00 EQU ?incomplete
+ #06 LDZ #02 EQU ?followup
+ #0a #08 STZ ;solution !test
+@followup
+ #0c #08 STZ ;followup-solution
+@test
+ DUP2 LDA #02 LDZ NEQ ?wrong-pop
+ DUP2 INC2 LDA #03 LDZ NEQ ?wrong-pop
+ #0002 ADD2 LDA #04 LDZ NEQ ?wrong
+ #07 LDZ #00 EQU ?wrong
+ #01 #05 STZ #08 LDZ !message
+@wrong-pop POP2
+@wrong #09 !message
+@missing #07 !message
+@incomplete #08
+@message #00 STZ !paint
+@done BRK

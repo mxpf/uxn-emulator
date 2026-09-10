@@ -41,6 +41,14 @@ This assessment did not repeat that evaluation; its reported room count, screen
 dimensions and ROM size are not new measurements here. Neither Oquonie's
 success nor its large authored world file decides our architecture by itself.
 
+## First control completed
+
+A [single-ROM reference and measured comparison](MYSTERY-SINGLE.md) now preserve
+the same mystery behavior on the existing input/display shell. This isolates
+machine count without changing host devices. It is not yet the banked Varvara
+candidate or the independently loaded data candidate. The initial measurements
+favor one ROM for this mystery; the three-ROM version remains available.
+
 ## Milestone and immediate step
 
 The milestone is one complete, substantially expressive mystery cartridge:
@@ -120,5 +128,5 @@ routed substrate for future experiments where cooperation may have a real use.
 No new compulsory roles, narrative services or emulator instructions follow
 from this assessment. No candidate is selected as proven superior yet.
 
-This document changes direction and the comparison plan only. It does not
-implement a single-ROM reference, publish a cartridge, or discard existing work.
+This is the broader comparison plan. The linked single-ROM report records the
+first implementation and its limits. No cartridge is published or discarded.

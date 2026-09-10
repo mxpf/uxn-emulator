@@ -173,7 +173,7 @@ build/test_mystery: tests/test_mystery.c $(MYSTERY_SOURCES) include/mystery.h | 
 .PHONY: mystery mystery-check mystery-web
 mystery: bin/mystery $(MYSTERY_ROMS)
 	./bin/mystery
-mystery-check: bin/mystery build/test_mystery $(MYSTERY_ROMS)
+mystery-check: bin/mystery build/test_mystery $(MYSTERY_ROMS) build/mystery-single.rom
 	./build/test_mystery
 	node tests/mystery_authoring_check.cjs
 	SDL_VIDEODRIVER=dummy ./bin/mystery --script 12345666789
@@ -345,3 +345,47 @@ lesson-memory: $(LESSON_MEMORY_BIN)
 
 clean:
 	rm -rf bin build
+
+# Behavior-equivalent one-machine control. Existing three-ROM targets stay intact.
+build/mystery-single.tal: examples/mystery-single.tal examples/mystery-presentation.tal examples/mystery-room.json tools/build_mystery.cjs | build
+	node tools/build_mystery.cjs $@
+build/mystery-single.rom: build/mystery-single.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+bin/mystery-single: src/mystery_sdl.c $(MYSTERY_SOURCES) include/mystery.h | bin
+	$(CC) $(CPPFLAGS) $(SDL_CFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 src/mystery_sdl.c $(MYSTERY_SOURCES) $(SDL_LIBS) -o $@
+build/test_mystery_single: tests/test_mystery.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/test_mystery.c $(MYSTERY_SOURCES) -o $@
+build/mystery_single_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/mystery_probe.c $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-single mystery-single-check mystery-single-web mystery-single-web-check
+mystery-single: bin/mystery-single build/mystery-single.rom
+	./bin/mystery-single
+mystery-single-check: bin/mystery-single build/test_mystery_single build/mystery-single.rom
+	./build/test_mystery_single
+	SDL_VIDEODRIVER=dummy ./bin/mystery-single --script 12345666789
+	SDL_VIDEODRIVER=dummy ./bin/mystery-single --script q12345qq666789889q
+mystery-single-web: build/mystery-single.rom
+	mkdir -p build/mystery-single-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-single.rom -o build/mystery-single-web/mystery.js
+	cp web/mystery/index.html web/mystery/style.css web/mystery/app.js build/mystery-single-web/
+	cp web/fonts.css build/mystery-single-web/
+	mkdir -p build/mystery-single-web/fonts
+	cp web/fonts/orbitron-latin.woff2 web/fonts/OFL-Orbitron.txt build/mystery-single-web/fonts/
+mystery-single-web-check: mystery-single-web build/mystery_single_probe
+	mkdir -p build/mystery-single-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_SINGLE=1 tests/mystery_probe.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-single.rom -o build/mystery-single-check/mystery.js
+	node tests/mystery_web_parity.cjs ../build/mystery-single-check/mystery.js ./build/mystery_single_probe
+
+build/test_mystery_compare: tests/test_mystery_compare.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_mystery_compare.c $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-compare-check
+mystery-compare-check: build/test_mystery_compare $(MYSTERY_ROMS) build/mystery-single.rom
+	./build/test_mystery_compare

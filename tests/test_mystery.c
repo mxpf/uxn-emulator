@@ -79,9 +79,19 @@ static void step(MysterySession *s, Model *m, unsigned a) {
   model_action(m, a);
   key(s, a);
   const uint8_t *p = s->live->runner.host.nodes[0].uxn.ram;
-  const uint8_t *d = s->live->runner.host.nodes[1].uxn.ram;
-  const uint8_t *k = s->live->runner.host.nodes[2].uxn.ram;
+  const uint8_t *d =
+      MYSTERY_DEFAULT_SINGLE ? p : s->live->runner.host.nodes[1].uxn.ram;
+  const uint8_t *k =
+      MYSTERY_DEFAULT_SINGLE ? p : s->live->runner.host.nodes[2].uxn.ram;
   CHECK(p[0] == m->message && p[1] == m->facts && p[5] == m->ended);
+  if (MYSTERY_DEFAULT_SINGLE) {
+    CHECK(p[7] == m->key && p[6] == m->question);
+    for (unsigned i = 0; i < 3; i++)
+      CHECK(p[i + 2] == m->choice[i]);
+    CHECK(!s->live->runner.host.nodes[0].uxn.working.pointer);
+    CHECK(!s->live->runner.host.nodes[0].uxn.return_stack.pointer);
+    return;
+  }
   CHECK(d[0] == m->key && d[1] == m->ended && d[2] == 0);
   CHECK(k[0] == m->facts);
   CHECK(p[6] == m->question && d[3] == m->question);
@@ -227,7 +237,9 @@ static void boundaries(void) {
       CHECK(routed_step(&s->live->runner.host));
     }
     CHECK(s->live->frames == 1 &&
-          s->live->runner.host.nodes[1].uxn.ram[0] == 0);
+          (MYSTERY_DEFAULT_SINGLE
+               ? s->live->runner.host.nodes[0].uxn.ram[7]
+               : s->live->runner.host.nodes[1].uxn.ram[0]) == 0);
     dispose(s);
   }
   /* Malformed drawing commands cannot replace the committed display. */
@@ -268,6 +280,8 @@ static void boundaries(void) {
 }
 
 static void protocol(void) {
+  if (MYSTERY_DEFAULT_SINGLE)
+    return; // No inter-machine protocol in this variant.
   // Invalid source, length, range and unsolicited verdicts are ignored.
   for (unsigned node = 0; node < 3; node++)
     for (unsigned fault = 0; fault < 7; fault++) {
@@ -349,17 +363,19 @@ static void conditional_protocol(void) {
   const uint8_t wrong_tag[] = {11, 1}, wrong_value[] = {10, 2};
   MysterySession *s = fresh();
   Model m = {0};
-  rejected_message(s, 1, 0, request, 1);
-  rejected_message(s, 2, 1, result,
-                   2); // Correct shape but prerequisite missing.
-  step(s, &m, 4);
-  rejected_message(s, 2, 0, result, 2);
-  rejected_message(s, 2, 1, result, 1);
-  rejected_message(s, 2, 1, wrong_tag, 2);
-  rejected_message(s, 2, 1, wrong_value, 2);
-  step(s, &m, 10);
-  rejected_message(s, 1, 0, request, 1);
-  rejected_message(s, 2, 1, result, 2); // Already applied: no second result.
+  if (!MYSTERY_DEFAULT_SINGLE) {
+    rejected_message(s, 1, 0, request, 1);
+    rejected_message(s, 2, 1, result,
+                     2); // Correct shape but prerequisite missing.
+    step(s, &m, 4);
+    rejected_message(s, 2, 0, result, 2);
+    rejected_message(s, 2, 1, result, 1);
+    rejected_message(s, 2, 1, wrong_tag, 2);
+    rejected_message(s, 2, 1, wrong_value, 2);
+    step(s, &m, 10);
+    rejected_message(s, 1, 0, request, 1);
+    rejected_message(s, 2, 1, result, 2); // Already applied: no second result.
+  }
   dispose(s); // Direct injections are deliberately not part of session replay.
 
   // Actual canvas input follows the identical gate and replays exactly.
