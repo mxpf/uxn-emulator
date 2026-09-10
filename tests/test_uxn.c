@@ -524,6 +524,103 @@ test_varvara_file(void)
 }
 
 static void
+test_varvara_file1_independence(void)
+{
+	Varvara varvara;
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	FILE *file;
+	char contents[7] = {0};
+	const char *path0 = "build/varvara-file0-independent.txt";
+	const char *path1 = "build/varvara-file1-independent.txt";
+
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	(void)remove(path0);
+	(void)remove(path1);
+	CHECK(varvara_init(&varvara, output, errors));
+	memcpy(&varvara.uxn.ram[0x0300], path0, strlen(path0) + 1u);
+	memcpy(&varvara.uxn.ram[0x0340], path1, strlen(path1) + 1u);
+	memcpy(&varvara.uxn.ram[0x0400], "abcdef", 6);
+	memcpy(&varvara.uxn.ram[0x0500], "XYZ123", 6);
+
+	/* Keep both write streams open while alternating between them. */
+	host_write_short(&varvara, 0xa8, 0x0300);
+	host_write_short(&varvara, 0xb8, 0x0340);
+	host_write_short(&varvara, 0xaa, 3);
+	host_write_short(&varvara, 0xba, 3);
+	host_write_short(&varvara, 0xae, 0x0400);
+	CHECK(varvara.uxn.devices[0xa2] == 0);
+	CHECK(varvara.uxn.devices[0xa3] == 3);
+	host_write_short(&varvara, 0xbe, 0x0500);
+	CHECK(varvara.uxn.devices[0xb2] == 0);
+	CHECK(varvara.uxn.devices[0xb3] == 3);
+	host_write_short(&varvara, 0xae, 0x0403);
+	CHECK(varvara.uxn.devices[0xa2] == 0);
+	CHECK(varvara.uxn.devices[0xa3] == 3);
+	host_write_short(&varvara, 0xbe, 0x0503);
+	CHECK(varvara.uxn.devices[0xb2] == 0);
+	CHECK(varvara.uxn.devices[0xb3] == 3);
+
+	file = fopen(path0, "rb");
+	CHECK(file != NULL);
+	CHECK(fread(contents, 1, 6, file) == 6);
+	CHECK(memcmp(contents, "abcdef", 6) == 0);
+	CHECK(fgetc(file) == EOF);
+	fclose(file);
+	memset(contents, 0, sizeof(contents));
+	file = fopen(path1, "rb");
+	CHECK(file != NULL);
+	CHECK(fread(contents, 1, 6, file) == 6);
+	CHECK(memcmp(contents, "XYZ123", 6) == 0);
+	CHECK(fgetc(file) == EOF);
+	fclose(file);
+
+	/* Resetting File0's name must not reset File1's read position. */
+	host_write_short(&varvara, 0xa8, 0x0300);
+	host_write_short(&varvara, 0xb8, 0x0340);
+	host_write_short(&varvara, 0xaa, 2);
+	host_write_short(&varvara, 0xba, 2);
+	host_write_short(&varvara, 0xbc, 0x0600);
+	CHECK(varvara.uxn.devices[0xb3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0600], "XY", 2) == 0);
+	host_write_short(&varvara, 0xac, 0x0700);
+	CHECK(varvara.uxn.devices[0xa3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0700], "ab", 2) == 0);
+	host_write_short(&varvara, 0xa8, 0x0300);
+
+	/* File1 stat must report exactly six bytes without resetting its stream. */
+	host_write_short(&varvara, 0xba, 4);
+	host_write_short(&varvara, 0xb4, 0x0800);
+	CHECK(varvara.uxn.devices[0xb2] == 0);
+	CHECK(varvara.uxn.devices[0xb3] == 4);
+	CHECK(memcmp(&varvara.uxn.ram[0x0800], "0006", 4) == 0);
+	host_write_short(&varvara, 0xba, 2);
+	host_write_short(&varvara, 0xbc, 0x0602);
+	CHECK(varvara.uxn.devices[0xb3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0602], "Z1", 2) == 0);
+
+	/* File1 activity must likewise leave File0's reset stream independent. */
+	host_write_short(&varvara, 0xac, 0x0710);
+	CHECK(varvara.uxn.devices[0xa3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0710], "ab", 2) == 0);
+	host_write_short(&varvara, 0xbc, 0x0604);
+	CHECK(varvara.uxn.devices[0xb3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0604], "23", 2) == 0);
+	host_write_short(&varvara, 0xac, 0x0712);
+	CHECK(varvara.uxn.devices[0xa3] == 2);
+	CHECK(memcmp(&varvara.uxn.ram[0x0712], "cd", 2) == 0);
+	CHECK(memcmp(&varvara.uxn.ram[0x0600], "XYZ123", 6) == 0);
+	CHECK(memcmp(&varvara.uxn.ram[0x0710], "abcd", 4) == 0);
+
+	varvara_destroy(&varvara);
+	CHECK(remove(path0) == 0);
+	CHECK(remove(path1) == 0);
+	fclose(output);
+	fclose(errors);
+}
+
+static void
 test_varvara_datetime(void)
 {
 	Varvara varvara;
@@ -743,6 +840,7 @@ main(void)
 	test_varvara_screen_auto();
 	test_varvara_input_state();
 	test_varvara_file();
+	test_varvara_file1_independence();
 	test_varvara_datetime();
 	test_varvara_audio();
 	test_varvara_reboot();

@@ -13,19 +13,26 @@ Run:
 make check
 ~~~
 
-This builds both runners, performs 234 local checks, opens the included pixel
+This builds both runners, performs 272 local checks, opens the included pixel
 ROM with SDL2's headless video and audio drivers, and saves a screenshot.
 
 The local checks cover instruction modes, stack and memory wraparound, System
 expansion fill and copy, Console, Screen pixels and sprites, selected Audio0
-sample output, Controller and Mouse registers, File0, DateTime, restarts, file
-limits, and the default denial plus explicit permission of Console `exec`.
+sample output, Controller and Mouse registers, File0 and File1 independence,
+DateTime, restarts, file limits, and the default denial plus explicit permission
+of Console `exec`.
 
 The loader checks include the exact boundary between bank zero and bank one. A
 65,280-byte ROM ends at bank-zero address `ffff` without changing bank one. The
 next file byte lands at bank-one address `0000`. A separate 65,284-byte fixture
 stores `BANK` there, then guest code uses System expansion to copy those four
 bytes to bank zero and prints exactly `BANK`.
+
+The File1 check uses ports `b0`–`bf` directly. File0 and File1 write different
+files while their streams are interleaved, producing the exact contents
+`abcdef` and `XYZ123`. Interleaved reads retain separate positions, and File1
+reports the exact four-byte status `0006` without resetting its open read
+stream.
 
 The audio check does more than ask whether sound is nonzero. It compares chosen
 sample positions with the current
