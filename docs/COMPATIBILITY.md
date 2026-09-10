@@ -13,20 +13,33 @@ Run:
 make check
 ~~~
 
-This builds both runners, performs 379 local checks, opens the included pixel
+This builds both runners, performs 411 local checks, opens the included pixel
 ROM with SDL2's headless video and audio drivers, and saves a screenshot.
 
-The local checks cover instruction modes, stack and memory wraparound, System
-expansion fill and copy, Console, Screen pixels and sprites, selected sample
-output from all four Audio voices, a three-voice stereo mix, Controller and
-Mouse registers, File0 and File1 independence, DateTime, restarts, file limits,
-and the default denial plus explicit permission of Console `exec`.
+The local checks cover instruction modes, stack and memory wraparound, all
+three System expansion commands, System stack and debug registers, Console,
+Screen pixels and sprites, selected sample output from all four Audio voices,
+a three-voice stereo mix, Controller and Mouse registers, File0 and File1
+independence, DateTime, restarts, file limits, and the default denial plus
+explicit permission of Console `exec`.
 
 The loader checks include the exact boundary between bank zero and bank one. A
 65,280-byte ROM ends at bank-zero address `ffff` without changing bank one. The
 next file byte lands at bank-one address `0000`. A separate 65,284-byte fixture
 stores `BANK` there, then guest code uses System expansion to copy those four
 bytes to bank zero and prints exactly `BANK`.
+
+The other System expansion checks compare exact memory after fill (`00`),
+copy-left (`01`), and copy-right (`02`) commands. The two copy checks use
+overlapping ranges in their intended directions. Four-byte requests beginning
+at address `fffe` stop after two bytes, whether the edge is on the source or
+destination side. A fill at `fffe` in the last available bank also stops at
+`ffff`; sentinels in adjacent banks remain unchanged. An invalid source bank
+leaves the valid destination unchanged, and command `7f` produces the exact
+documented error line. Separate register checks set
+and read the working- and return-stack pointers and compare the System debug
+stack dump byte for byte. These are selected boundary cases, not an exhaustive
+set of lengths and bank combinations.
 
 The File1 check uses ports `b0`–`bf` directly. File0 and File1 write different
 files while their streams are interleaved, producing the exact contents

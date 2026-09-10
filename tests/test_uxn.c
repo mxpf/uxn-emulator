@@ -322,6 +322,157 @@ test_varvara_expansion(void)
 }
 
 static void
+run_expansion_command(Varvara *varvara, uint16_t address,
+	const uint8_t *command, size_t length)
+{
+	memcpy(&varvara->uxn.ram[address], command, length);
+	host_write_short(varvara, 0x02, address);
+}
+
+static void
+test_varvara_expansion_modes(void)
+{
+	Varvara varvara;
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	const uint8_t copy_left[] = {
+		0x01, 0x00, 0x04, 0x00, 0x00, 0x05, 0x01,
+		0x00, 0x00, 0x05, 0x00
+	};
+	const uint8_t copy_right[] = {
+		0x02, 0x00, 0x04, 0x00, 0x00, 0x06, 0x00,
+		0x00, 0x00, 0x06, 0x01
+	};
+	const uint8_t copy_to_bank_edge[] = {
+		0x01, 0x00, 0x04, 0x00, 0x00, 0x07, 0x00,
+		0x00, 0x01, 0xff, 0xfe
+	};
+	const uint8_t copy_from_bank_edge[] = {
+		0x02, 0x00, 0x04, 0x00, 0x01, 0xff, 0xfe,
+		0x00, 0x00, 0x07, 0x10
+	};
+	const uint8_t fill_last_bank[] = {
+		0x00, 0x00, 0x04, 0x00, 0x0f, 0xff, 0xfe, 0x5a
+	};
+	const uint8_t invalid_source_bank[] = {
+		0x01, 0x00, 0x02, 0x00, 0x10, 0x00, 0x00,
+		0x00, 0x00, 0x07, 0x20
+	};
+	const uint8_t unknown_command[] = {
+		0x7f, 0x00, 0x01, 0x00, 0x00, 0x07, 0x00
+	};
+	const uint8_t left_before[] = {1, 2, 3, 4, 5};
+	const uint8_t left_after[] = {2, 3, 4, 5, 5};
+	const uint8_t right_before[] = {1, 2, 3, 4, 5};
+	const uint8_t right_after[] = {1, 1, 2, 3, 4};
+	const uint8_t bank_source[] = {0xa1, 0xa2, 0xa3, 0xa4};
+	const char diagnostic[] =
+		"Varvara: unknown System/expansion command 7f\n";
+	char actual[sizeof(diagnostic)];
+
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	CHECK(varvara_init(&varvara, output, errors));
+
+	memcpy(&varvara.uxn.ram[0x0500], left_before, sizeof(left_before));
+	run_expansion_command(&varvara, 0x0200, copy_left,
+		sizeof(copy_left));
+	CHECK(memcmp(&varvara.uxn.ram[0x0500], left_after,
+		sizeof(left_after)) == 0);
+
+	memcpy(&varvara.uxn.ram[0x0600], right_before, sizeof(right_before));
+	run_expansion_command(&varvara, 0x0200, copy_right,
+		sizeof(copy_right));
+	CHECK(memcmp(&varvara.uxn.ram[0x0600], right_after,
+		sizeof(right_after)) == 0);
+
+	memcpy(&varvara.uxn.ram[0x0700], bank_source, sizeof(bank_source));
+	varvara.uxn.ram[UXN_RAM_SIZE + 0xfffd] = 0x19;
+	varvara.uxn.ram[2u * UXN_RAM_SIZE] = 0x29;
+	run_expansion_command(&varvara, 0x0200, copy_to_bank_edge,
+		sizeof(copy_to_bank_edge));
+	CHECK(varvara.uxn.ram[UXN_RAM_SIZE + 0xfffd] == 0x19);
+	CHECK(varvara.uxn.ram[UXN_RAM_SIZE + 0xfffe] == 0xa1);
+	CHECK(varvara.uxn.ram[UXN_RAM_SIZE + 0xffff] == 0xa2);
+	CHECK(varvara.uxn.ram[2u * UXN_RAM_SIZE] == 0x29);
+
+	varvara.uxn.ram[UXN_RAM_SIZE + 0xfffe] = 0xb1;
+	varvara.uxn.ram[UXN_RAM_SIZE + 0xffff] = 0xb2;
+	memset(&varvara.uxn.ram[0x0710], 0xee, 4);
+	run_expansion_command(&varvara, 0x0200, copy_from_bank_edge,
+		sizeof(copy_from_bank_edge));
+	CHECK(varvara.uxn.ram[0x0710] == 0xb1);
+	CHECK(varvara.uxn.ram[0x0711] == 0xb2);
+	CHECK(varvara.uxn.ram[0x0712] == 0xee);
+	CHECK(varvara.uxn.ram[0x0713] == 0xee);
+
+	varvara.uxn.ram[15u * UXN_RAM_SIZE + 0xfffd] = 0x39;
+	varvara.uxn.ram[0] = 0x49;
+	run_expansion_command(&varvara, 0x0200, fill_last_bank,
+		sizeof(fill_last_bank));
+	CHECK(varvara.uxn.ram[15u * UXN_RAM_SIZE + 0xfffd] == 0x39);
+	CHECK(varvara.uxn.ram[15u * UXN_RAM_SIZE + 0xfffe] == 0x5a);
+	CHECK(varvara.uxn.ram[15u * UXN_RAM_SIZE + 0xffff] == 0x5a);
+	CHECK(varvara.uxn.ram[0] == 0x49);
+
+	varvara.uxn.ram[0x0720] = 0xc1;
+	varvara.uxn.ram[0x0721] = 0xc2;
+	run_expansion_command(&varvara, 0x0200, invalid_source_bank,
+		sizeof(invalid_source_bank));
+	CHECK(varvara.uxn.ram[0x0720] == 0xc1);
+	CHECK(varvara.uxn.ram[0x0721] == 0xc2);
+
+	run_expansion_command(&varvara, 0x0200, unknown_command,
+		sizeof(unknown_command));
+	rewind(errors);
+	CHECK(fread(actual, 1, sizeof(diagnostic) - 1u, errors) ==
+		sizeof(diagnostic) - 1u);
+	CHECK(memcmp(actual, diagnostic, sizeof(diagnostic) - 1u) == 0);
+	CHECK(fgetc(errors) == EOF);
+
+	varvara_destroy(&varvara);
+	fclose(output);
+	fclose(errors);
+}
+
+static void
+test_varvara_system_registers(void)
+{
+	Varvara varvara;
+	FILE *output = tmpfile();
+	FILE *errors = tmpfile();
+	const char diagnostic[] =
+		"WST 00 00 00 00 00 00|aa bb  <02\n"
+		"RST 00 00 00 00 00 00 00|cc  <01\n";
+	char actual[sizeof(diagnostic)];
+
+	CHECK(output != NULL);
+	CHECK(errors != NULL);
+	CHECK(varvara_init(&varvara, output, errors));
+	host_write_byte(&varvara, 0x04, 0x02);
+	host_write_byte(&varvara, 0x05, 0x01);
+	CHECK(varvara.uxn.working.pointer == 0x02);
+	CHECK(varvara.uxn.return_stack.pointer == 0x01);
+	varvara.uxn.devices[0x04] = 0xf4;
+	varvara.uxn.devices[0x05] = 0xf5;
+	CHECK(varvara.uxn.device_read(&varvara.uxn, 0x04, &varvara) == 0x02);
+	CHECK(varvara.uxn.device_read(&varvara.uxn, 0x05, &varvara) == 0x01);
+	varvara.uxn.working.data[0] = 0xaa;
+	varvara.uxn.working.data[1] = 0xbb;
+	varvara.uxn.return_stack.data[0] = 0xcc;
+	host_write_byte(&varvara, 0x0e, 0x01);
+	rewind(errors);
+	CHECK(fread(actual, 1, sizeof(diagnostic) - 1u, errors) ==
+		sizeof(diagnostic) - 1u);
+	CHECK(memcmp(actual, diagnostic, sizeof(diagnostic) - 1u) == 0);
+	CHECK(fgetc(errors) == EOF);
+
+	varvara_destroy(&varvara);
+	fclose(output);
+	fclose(errors);
+}
+
+static void
 test_varvara_screen(void)
 {
 	Varvara varvara;
@@ -955,6 +1106,8 @@ main(void)
 	test_varvara_console_and_state();
 	test_varvara_console_exec();
 	test_varvara_expansion();
+	test_varvara_expansion_modes();
+	test_varvara_system_registers();
 	test_varvara_screen();
 	test_varvara_sprite();
 	test_varvara_screen_auto();
