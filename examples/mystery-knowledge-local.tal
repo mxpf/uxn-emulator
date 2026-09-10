@@ -1,0 +1,3 @@
+( Natural single-ROM state: no queue, simulated isolation or timing. )
+@ask-bram #09 LDZ !account
+@learn-bram #01 #09 STZ !learned

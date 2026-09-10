@@ -15,9 +15,18 @@ typedef struct {
   unsigned frames, turns;
   bool failed;
 } MysteryMachine;
-typedef enum { MYSTERY_COOPERATING, MYSTERY_SINGLE } MysteryVariant;
+typedef enum {
+  MYSTERY_COOPERATING,
+  MYSTERY_SINGLE,
+  MYSTERY_KNOWLEDGE_MULTI,
+  MYSTERY_KNOWLEDGE_SINGLE
+} MysteryVariant;
 #ifndef MYSTERY_DEFAULT_SINGLE
 #define MYSTERY_DEFAULT_SINGLE 0
+#endif
+#ifndef MYSTERY_DEFAULT_VARIANT
+#define MYSTERY_DEFAULT_VARIANT                                                \
+  (MYSTERY_DEFAULT_SINGLE ? MYSTERY_SINGLE : MYSTERY_COOPERATING)
 #endif
 typedef struct {
   MysteryVariant variant;

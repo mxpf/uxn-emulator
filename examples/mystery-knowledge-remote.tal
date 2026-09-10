@@ -1,0 +1,20 @@
+( Main knows the observed return, not Bram's current belief.
+  Requests 10=query, 20=learn-return. Replies 30=account, 31=learned.
+  Every packet is two bytes. One pending request; source is the route device.
+  Query is not permission to learn. The response is used, not cached. )
+@ask-bram
+ #02 #0b STZ #1000 #0900 STA2 !send-witness
+@learn-bram
+ #0a #0b STZ #2001 #0900 STA2
+@send-witness
+ #01 #d9 DEO #d9 DEI ?done #01 #fe STZ BRK
+@witness-reply
+ #d4 DEI #02 NEQ ?done
+ #0801 LDA #01 GTH ?done
+ #0b LDZ #02 EQU ?account-reply
+ #0b LDZ #0a NEQ ?done
+ #0800 LDA #31 NEQ ?done #0801 LDA #01 NEQ ?done
+ #00 #0b STZ !learned
+@account-reply
+ #0800 LDA #30 NEQ ?done
+ #00 #0b STZ #0801 LDA !account

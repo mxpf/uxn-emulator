@@ -1,0 +1,18 @@
+( Bram's private initial observation: at six Cora held the page; he left.
+  09=0 last-known held, 09=1 learned of return. Only source 0 can teach him.
+  The initial observation is authored backstory, not a replayed earlier scene.
+  Incoming query never changes knowledge. No display or other RAM access. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2
+ #0900 #d6 DEO2 #02 #d8 DEO #01 #dc DEO BRK
+@receive
+ #dd DEI #00 NEQ ?done #d4 DEI #02 NEQ ?done
+ #0800 LDA #10 EQU ?query
+ #0800 LDA #20 NEQ ?done #0801 LDA #01 NEQ ?done
+ #01 #09 STZ #3101 #0900 STA2 !send
+@query
+ #0801 LDA ?done
+ #30 #0900 STA #09 LDZ #0901 STA
+@send
+ #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
+@done BRK

@@ -158,6 +158,51 @@ GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 MYSTERY_SOURCES := src/mystery.c $(RUNNER_SOURCES)
 MYSTERY_ROMS := build/mystery-presentation.rom build/mystery-director.rom build/mystery-deduction.rom
 
+# Local, opt-in Last Visitor deduction comparison; excluded from public builds.
+KNOWLEDGE_ROMS := build/mystery-knowledge-multi.rom build/mystery-knowledge-single.rom build/mystery-knowledge-witness.rom
+KNOWLEDGE_INPUTS := examples/mystery-knowledge.json examples/mystery-knowledge.tal examples/mystery-knowledge-local.tal examples/mystery-knowledge-remote.tal examples/mystery-room.json examples/mystery-presentation.tal tools/build_mystery.cjs
+build/mystery-knowledge-multi.tal build/mystery-knowledge-single.tal: $(KNOWLEDGE_INPUTS) | build
+	node tools/build_mystery.cjs $@
+build/mystery-knowledge-multi.rom: build/mystery-knowledge-multi.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/mystery-knowledge-single.rom: build/mystery-knowledge-single.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/test_mystery_knowledge: tests/test_mystery_knowledge.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-knowledge-check mystery-knowledge-sanitize
+mystery-knowledge-check: $(KNOWLEDGE_ROMS) build/test_mystery_knowledge
+	./build/test_mystery_knowledge
+	node tests/mystery_knowledge_authoring_check.cjs
+mystery-knowledge-sanitize: $(KNOWLEDGE_ROMS)
+	$(CC) $(CPPFLAGS) -std=c11 -Wall -Wextra -Wpedantic -Werror -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_mystery_knowledge.c $(MYSTERY_SOURCES) -o build/test_mystery_knowledge_sanitize
+	./build/test_mystery_knowledge_sanitize
+
+build/mystery_knowledge_multi_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_KNOWLEDGE_MULTI $< $(MYSTERY_SOURCES) -o $@
+build/mystery_knowledge_single_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_KNOWLEDGE_SINGLE $< $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-knowledge-web mystery-knowledge-web-check
+mystery-knowledge-web: $(KNOWLEDGE_ROMS)
+	mkdir -p build/mystery-knowledge-multi-web build/mystery-knowledge-single-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_KNOWLEDGE_MULTI src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-knowledge-multi.rom --embed-file build/mystery-knowledge-witness.rom -o build/mystery-knowledge-multi-web/mystery.js
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_KNOWLEDGE_SINGLE src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-knowledge-single.rom -o build/mystery-knowledge-single-web/mystery.js
+	node tools/build_mystery_knowledge_web.cjs build/mystery-knowledge-multi-web
+	node tools/build_mystery_knowledge_web.cjs build/mystery-knowledge-single-web
+mystery-knowledge-web-check: mystery-knowledge-web build/mystery_knowledge_multi_probe build/mystery_knowledge_single_probe
+	mkdir -p build/mystery-knowledge-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/test_mystery_knowledge.c $(MYSTERY_SOURCES) \
+		-sSTACK_SIZE=262144 -sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		--embed-file build/mystery-knowledge-multi.rom --embed-file build/mystery-knowledge-witness.rom --embed-file build/mystery-knowledge-single.rom -o build/mystery-knowledge-check/check.js
+	node build/mystery-knowledge-check/check.js
+
 build/mystery-presentation.tal build/mystery-deduction.tal: examples/mystery-presentation.tal examples/mystery-deduction.tal examples/mystery-room.json tools/build_mystery.cjs | build
 	node tools/build_mystery.cjs $@
 build/mystery-deduction.rom: build/mystery-deduction.tal $(ASSEMBLER_ROM) $(BIN)
