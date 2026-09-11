@@ -50,23 +50,26 @@ Run a terminal ROM:
 bin/uxncli program.rom
 ```
 
-## Make a Mac app
+## Install the Mac app
 
-The Mac app is optional. It wraps the same emulator in a folder macOS knows
-how to open, and it includes the SDL2 library used for the window and sound.
+Download and open the `.dmg` file for your kind of Mac. Drag **Uxn Emulator**
+onto the **Applications** shortcut, then open the app from Applications. Drop a
+`.rom` file onto its window to start it. The empty window can stay open while
+you choose a ROM.
+
+The app includes the SDL2 library used for its window and sound. It is locally
+signed but not notarized by Apple, so the first launch after downloading may
+require right-clicking the app and choosing **Open**.
+
+To build and check the drag-to-install disk image from source:
 
 ```bash
-make app
+make dmg-check
 open dist
 ```
 
-Drag **Uxn Emulator** into Applications. Double-click it, then drop a `.rom`
-file onto its window. Run `make package` to create a ZIP that can be moved to
-another Mac with the same kind of processor.
-
-The app is locally signed but not notarized by Apple. After downloading it on
-another Mac, the first launch may require right-clicking the app and choosing
-**Open**.
+This creates `dist/Uxn-Emulator-macOS-<arch>.dmg`. Run `make package` if you
+also want the existing ZIP archive.
 
 To see the whole path working, build and run the included greeting:
 

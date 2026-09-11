@@ -22,8 +22,9 @@ SDL_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
 MACOS_APP := dist/Uxn Emulator.app
 MACOS_ARCHIVE := dist/Uxn-Emulator-macOS-$(shell uname -m).zip
+MACOS_DMG := dist/Uxn-Emulator-macOS-$(shell uname -m).dmg
 
-.PHONY: all app app-check package check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
+.PHONY: all app app-check package dmg dmg-check check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
 
 all: $(BIN) $(EMU_BIN)
 
@@ -34,6 +35,9 @@ package: app
 	rm -f "$(MACOS_ARCHIVE)"
 	ditto -c -k --norsrc --keepParent "$(MACOS_APP)" "$(MACOS_ARCHIVE)"
 	@printf '%s\n' 'Created $(MACOS_ARCHIVE)'
+
+dmg: app packaging/macos/build-dmg.sh
+	sh ./packaging/macos/build-dmg.sh "$(MACOS_APP)" "$(MACOS_DMG)"
 
 $(BIN): src/main.c $(ROM_SOURCE) $(CORE_SOURCES) include/uxn.h include/varvara.h include/rom.h | bin
 	$(CC) $(CPPFLAGS) $(CFLAGS) src/main.c $(ROM_SOURCE) $(CORE_SOURCES) -o $@
@@ -113,6 +117,9 @@ app-check: app $(PIXEL_ROM) | build
 	! otool -L "$(MACOS_APP)/Contents/MacOS/uxnemu" | \
 		grep -E '/(opt|usr/local)/.*libSDL2'
 	@printf '%s\n' 'macOS app check: pass'
+
+dmg-check: dmg $(PIXEL_ROM) packaging/macos/verify-dmg.sh | build
+	sh ./packaging/macos/verify-dmg.sh "$(MACOS_DMG)" "$(PIXEL_ROM)"
 
 compatibility: $(BIN) $(EMU_BIN)
 	./tests/compatibility.sh
