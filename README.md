@@ -134,6 +134,8 @@ compared byte for byte.
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
+- [How the emulator works](docs/HOW-IT-WORKS.md) gives a simple diagram of the
+  path from a ROM to the computer.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
 - [Constellation v0](docs/CONSTELLATION-V0.md) documents the isolated two-ROM
