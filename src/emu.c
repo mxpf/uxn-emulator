@@ -438,9 +438,9 @@ handle_event(Varvara *varvara, Display *display, const SDL_Event *event)
 			varvara->uxn.device_write(&varvara->uxn, 0x0e, 1, varvara);
 		else if(event->key.keysym.sym == SDLK_F3)
 			varvara->uxn.devices[0x0f] = 0xff;
-		else if(event->key.keysym.sym == SDLK_F4)
+		else if(event->key.keysym.sym == SDLK_F4 && display->rom_path)
 			return restart_program(varvara, display, display->rom_path, false);
-		else if(event->key.keysym.sym == SDLK_F5)
+		else if(event->key.keysym.sym == SDLK_F5 && display->rom_path)
 			return restart_program(varvara, display, display->rom_path, true);
 		else if(event->key.keysym.sym == SDLK_F11)
 			set_fullscreen(display, !display->fullscreen);
@@ -507,7 +507,7 @@ usage(const char *program)
 	fprintf(stderr,
 		"usage: %s [-f|-2] [--scale 1|2|3] [--frames count] "
 		"[--screenshot image.bmp] [--allow-filesystem] [--allow-exec] "
-		"program.rom [arguments ...]\n",
+		"[--wait] [program.rom [arguments ...]]\n",
 		program);
 }
 
@@ -525,6 +525,7 @@ main(int argc, char **argv)
 	bool fullscreen = false;
 	bool sandbox_files = true;
 	bool allow_exec = false;
+	bool wait_for_rom = false;
 	const char *screenshot_path = NULL;
 	uint64_t next_frame;
 	uint64_t frame_ticks;
@@ -550,6 +551,10 @@ main(int argc, char **argv)
 			sandbox_files = false;
 		} else if(strcmp(argv[rom_index], "--allow-exec") == 0) {
 			allow_exec = true;
+		} else if(strcmp(argv[rom_index], "--wait") == 0) {
+			wait_for_rom = true;
+		} else if(strncmp(argv[rom_index], "-psn_", 5) == 0) {
+			/* Finder supplied this process identifier on older macOS releases. */
 		} else if(strcmp(argv[rom_index], "--scale") == 0 && rom_index + 1 < argc) {
 			scale = (unsigned int)strtoul(argv[++rom_index], NULL, 10);
 			if(scale < 1 || scale > 3) return usage(argv[0]), 64;
@@ -564,7 +569,7 @@ main(int argc, char **argv)
 		}
 		rom_index++;
 	}
-	if(rom_index >= argc)
+	if(rom_index >= argc && !wait_for_rom)
 		return usage(argv[0]), 64;
 	varvara = calloc(1, sizeof(*varvara));
 	if(!varvara) {
@@ -578,21 +583,23 @@ main(int argc, char **argv)
 	}
 	varvara_files_set_sandbox(varvara, sandbox_files);
 	varvara_exec_set_allowed(varvara, allow_exec);
-	if(!rom_load_file(&varvara->uxn, argv[rom_index], error, sizeof(error))) {
-		fprintf(stderr, "uxnemu: %s\n", error);
-		varvara_destroy(varvara);
-		free(varvara);
-		return 66;
-	}
-	varvara->uxn.devices[0x17] = rom_index + 1 < argc ? 1 : 0;
-	varvara_start(varvara, 0);
-	if(varvara_has_console_vector(varvara) && rom_index + 1 < argc)
-		send_arguments(varvara, argc, argv, rom_index + 1);
-	if(varvara_is_halted(varvara)) {
-		int exit_code = varvara_exit_code(varvara);
-		varvara_destroy(varvara);
-		free(varvara);
-		return exit_code;
+	if(rom_index < argc) {
+		if(!rom_load_file(&varvara->uxn, argv[rom_index], error, sizeof(error))) {
+			fprintf(stderr, "uxnemu: %s\n", error);
+			varvara_destroy(varvara);
+			free(varvara);
+			return 66;
+		}
+		varvara->uxn.devices[0x17] = rom_index + 1 < argc ? 1 : 0;
+		varvara_start(varvara, 0);
+		if(varvara_has_console_vector(varvara) && rom_index + 1 < argc)
+			send_arguments(varvara, argc, argv, rom_index + 1);
+		if(varvara_is_halted(varvara)) {
+			int exit_code = varvara_exit_code(varvara);
+			varvara_destroy(varvara);
+			free(varvara);
+			return exit_code;
+		}
 	}
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER |
 		SDL_INIT_AUDIO) != 0) {
@@ -609,8 +616,9 @@ main(int argc, char **argv)
 		free(varvara);
 		return 70;
 	}
-	display.rom_path = copy_string(argv[rom_index]);
-	if(!display.rom_path) {
+	if(rom_index < argc)
+		display.rom_path = copy_string(argv[rom_index]);
+	if(rom_index < argc && !display.rom_path) {
 		fprintf(stderr, "uxnemu: could not remember the ROM path\n");
 		display_destroy(&display);
 		SDL_Quit();
@@ -618,7 +626,11 @@ main(int argc, char **argv)
 		free(varvara);
 		return 70;
 	}
-	display_update_title(&display, varvara, display.rom_path);
+	if(display.rom_path)
+		display_update_title(&display, varvara, display.rom_path);
+	else
+		SDL_SetWindowTitle(display.window,
+			"Uxn Emulator - drop a ROM here to begin");
 	varvara_audio_set_sample_rate(varvara, display.audio_rate);
 	standard_input_event = SDL_RegisterEvents(1);
 	if(standard_input_event == (Uint32)-1) {
@@ -636,7 +648,7 @@ main(int argc, char **argv)
 	SDL_StartTextInput();
 	frame_ticks = SDL_GetPerformanceFrequency() / 60u;
 	next_frame = SDL_GetPerformanceCounter();
-	while(running && !varvara_is_halted(varvara)) {
+	while(running && (!display.rom_path || !varvara_is_halted(varvara))) {
 		SDL_Event event;
 		uint64_t now;
 		varvara_exec_poll(varvara);
@@ -645,8 +657,10 @@ main(int argc, char **argv)
 				running = false;
 		now = SDL_GetPerformanceCounter();
 		if(now >= next_frame) {
-			varvara_screen_frame(varvara, 0);
-			play_audio_frame(&display, varvara);
+			if(display.rom_path) {
+				varvara_screen_frame(varvara, 0);
+				play_audio_frame(&display, varvara);
+			}
 			next_frame = now + frame_ticks;
 			frames++;
 			if(frame_limit && frames >= frame_limit)

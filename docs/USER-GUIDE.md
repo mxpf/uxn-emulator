@@ -1,5 +1,16 @@
 # Using the emulator
 
+## Use the Mac app
+
+Build the optional app with `make app`, then open the `dist` folder and drag
+**Uxn Emulator** into Applications. Double-click the app and drop a `.rom`
+file onto its window. The app waits for a ROM instead of closing when it starts
+without one.
+
+The app contains the same `uxnemu` program produced by `make`. It also contains
+its SDL2 library, so SDL2 does not need to be installed separately on the Mac
+that runs the finished app. The source build remains available beside it.
+
 ## Start a ROM
 
 Use the windowed runner for graphics or sound:
