@@ -1,0 +1,30 @@
+( 10 ask/wait; 40 start round; 20 offer page. Two-byte packets value=0.
+  30 account and 31 receipt carry location. 50 self continuation carries
+  expected Cora phase. Authenticated source plus phase prevents stale repeats.
+  Node 0 neither reads nor stores Bram phase/wait/seal/location. )
+@ask-bram
+ #01 #0b STZ #1000 #0900 STA2 #01 ;send JSR2 BRK
+@incident
+ #01 #0c STZ
+ #4000 #0900 STA2 #01 ;send JSR2
+ !continue-cora
+@continue-cora
+ #50 #0900 STA #0c LDZ #0901 STA #02 ;send JSR2 BRK
+@cora-step
+ #d4 DEI #02 NEQ ?done #0800 LDA #50 NEQ ?done
+ #0c LDZ #01 LTH ?done #0c LDZ #02 GTH ?done
+ #0801 LDA #0c LDZ NEQ ?done
+ #0c LDZ INC #0c STZ
+ #0c LDZ #03 NEQ ?continue-cora
+ #2000 #0900 STA2 #01 ;send JSR2 BRK
+@desk-reply
+ #d4 DEI #02 NEQ ?done #0801 LDA #02 GTH ?done
+ #0800 LDA #31 EQU ?receipt
+ #0800 LDA #30 NEQ ?done #0b LDZ #01 NEQ ?done
+ #00 #0b STZ #0801 LDA !account
+ @receipt
+ #0c LDZ #03 NEQ ?done #0d LDZ ?done
+ #0801 LDA #00 EQU ?done #0801 LDA !returned
+@send ( route -- )
+ #dc DEO #01 #d9 DEO #d9 DEI ?sent #01 #fe STZ
+ @sent JMP2r

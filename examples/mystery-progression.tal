@@ -1,0 +1,82 @@
+( Finite desk-closing incident inside Last Visitor. No general actor model.
+  00-08 existing mystery. 0a compared bits: Bram=1 Cora=2.
+  0c Cora: 0 idle, 1 fetching, 2 approaching, 3 offered page.
+  0d receipt: 0 absent, 1 sealed inbox, 2 ledger.
+  Multi 0b pending query. Single 10-13 ordinary Bram record, see local file.
+  Q is the one finite incident, not a per-actor clock or lab control. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2
+ ( KNOWLEDGE-SETUP )
+ !paint
+@receive
+ ( KNOWLEDGE-RECEIVE )
+ #dd DEI #ff NEQ ?done #d4 DEI #03 NEQ ?done
+ #0800 LDA #01 EQU ?key
+ #0800 LDA #00 NEQ ?done #0802 LDA #bf GTH ?done
+ ;hotspots
+ @hit-loop DUP2 ;hotspots-end EQU2 ?hit-miss
+ DUP2 LDA #0801 LDA GTH ?hit-next
+ DUP2 #0001 ADD2 LDA #0802 LDA GTH ?hit-next
+ DUP2 #0002 ADD2 LDA #0801 LDA GTH #00 EQU ?hit-next
+ DUP2 #0003 ADD2 LDA #0802 LDA GTH #00 EQU ?hit-next
+ #0004 ADD2 LDA !action
+ @hit-next #0005 ADD2 !hit-loop
+ @hit-miss POP2 BRK
+@key
+ #0802 LDA ?done
+ #0801 LDA #01 LTH ?done #0801 LDA #0a GTH ?done
+ #0801 LDA
+@action
+ #05 LDZ ?terminal
+ DUP #0a EQU ?question
+ DUP #06 LTH ?observe
+ DUP #09 EQU ?conclude
+ #04 SUB DUP LDZ INC DUP #04 NEQ ?choice POP #01
+ @choice SWP STZ #06 !message
+@terminal POP !paint
+@question
+ POP #06 LDZ #01 NEQ ?done
+ #00 #04 STZ #00 #0a STZ !incident
+@observe
+ DUP #02 NEQ ?ordinary POP !ask-bram
+ @ordinary
+ DUP #03 NEQ ?no-key #01 #07 STZ
+ @no-key DUP #01 SUB #00 SWP ;evidence ADD2 LDA
+ #01 LDZ ORA #01 STZ
+ #06 LDZ ?unlocked
+ #01 LDZ #18 AND #18 NEQ ?unlocked #01 #06 STZ
+ @unlocked
+ #06 LDZ #02 LTH ?message
+ DUP #03 EQU ?cora-account DUP #04 EQU ?desk-account !message
+ @cora-account POP #0a LDZ #02 ORA #0a STZ #0d LDZ #10 ADD !message
+ @desk-account POP #0f !message
+@account ( location: 0 before incident, 1 inbox, 2 ledger -- )
+ #01 LDZ #02 ORA #01 STZ
+ #06 LDZ #02 LTH ?old-account
+ #0a LDZ #01 ORA #0a STZ #0c ADD !message
+ @old-account POP #02 !message
+@returned ( receipt -- )
+ #0d STZ #02 #06 STZ #0b !message
+@conclude
+ POP #01 LDZ #3f NEQ ?missing
+ #06 LDZ #02 LTH ?ready
+ #0a LDZ #03 NEQ ?not-compared
+ @ready
+ #02 LDZ #00 EQU ?incomplete
+ #03 LDZ #00 EQU ?incomplete
+ #04 LDZ #00 EQU ?incomplete
+ ;solution LDA #02 LDZ NEQ ?wrong
+ ;solution INC2 LDA #03 LDZ NEQ ?wrong
+ #07 LDZ #00 EQU ?wrong
+ #06 LDZ #02 LTH ?baseline
+ #04 LDZ #0d LDZ NEQ ?wrong
+ #01 #05 STZ #0c !message
+ @baseline ;solution #0002 ADD2 LDA #04 LDZ NEQ ?wrong
+ #01 #05 STZ #0a !message
+@wrong #09 !message
+@missing #07 !message
+@not-compared #10 !message
+@incomplete #08
+@message #00 STZ !paint
+@done BRK
+ ( KNOWLEDGE-ACCOUNT )

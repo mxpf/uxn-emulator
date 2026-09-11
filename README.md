@@ -158,6 +158,10 @@ and validation guarantees; this does not add filesystem access to the emulator.
   The subsequent [knowledge-dependent deduction](docs/LAST-VISITOR-KNOWLEDGE-DEDUCTION.md)
   integrates that question into the actual mystery, with a private witness and
   natural single-ROM control. Run `make mystery-knowledge-check`; local only.
+  The bounded [independent-progression comparison](docs/LAST-VISITOR-INDEPENDENT-PROGRESSION.md)
+  tests a page return during Bram's closing round, including a natural local
+  control and a timing-revision probe. Run `make mystery-progression-check`;
+  this is local evidence, not an architecture choice or public release.
   [Data-defined question variants](docs/MYSTERY-RULES.md) change a prerequisite
   and consequence with identical executable code; `make mystery-rules-check`
   verifies both without changing the shared host.

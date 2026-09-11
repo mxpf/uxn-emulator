@@ -2,15 +2,17 @@
 const fs = require('node:fs'), assert = require('node:assert/strict');
 const data = JSON.parse(fs.readFileSync('examples/mystery-room.json', 'utf8'));
 const target = process.argv[2];
-const knowledge = ['build/mystery-knowledge-multi.tal', 'build/mystery-knowledge-single.tal'].includes(target);
-const single = ['build/mystery-single.tal', 'build/mystery-single-retained.tal', 'build/mystery-knowledge-single.tal'].includes(target);
+const progression = ['build/mystery-progression-multi.tal', 'build/mystery-progression-single.tal'].includes(target);
+const knowledge = progression || ['build/mystery-knowledge-multi.tal', 'build/mystery-knowledge-single.tal'].includes(target);
+const single = ['build/mystery-single.tal', 'build/mystery-single-retained.tal', 'build/mystery-knowledge-single.tal', 'build/mystery-progression-single.tal'].includes(target);
 assert.ok(!process.argv[3] || single, 'Question data is only supported by the single-ROM reference.');
 const question = single && !knowledge ? JSON.parse(fs.readFileSync(process.argv[3] || 'examples/mystery-question-returned.json', 'utf8')) : null;
-const addition = knowledge ? JSON.parse(fs.readFileSync('examples/mystery-knowledge.json', 'utf8')) : null;
+const fixture = progression ? 'progression' : 'knowledge';
+const addition = knowledge ? JSON.parse(fs.readFileSync(`examples/mystery-${fixture}.json`, 'utf8')) : null;
 if (addition) {
  for (const [index, text] of Object.entries(addition.messages)) data.messages[Number(index)] = text;
  data.questionLabels = addition.questionLabels;
- data.followupSolution = addition.deductionSolution;
+ if (!progression) data.followupSolution = addition.deductionSolution;
  assert.equal(addition.whyChoices.length, 4);
  addition.whyChoices.forEach(s => assert.ok(!s.includes('\n') && s.length <= 27));
 }
@@ -76,17 +78,17 @@ if (knowledge) {
 }
 const rules = '\n@evidence ' + data.evidenceMasks.map(hex).join(' ') +
  '\n@solution ' + data.solution.map(hex).join(' ') +
- '\n@followup-solution ' + data.followupSolution.map(hex).join(' ') + '\n';
+ (progression ? '\n' : '\n@followup-solution ' + data.followupSolution.map(hex).join(' ') + '\n');
 const interaction = question ? '\n@interaction-rule ' + hex(question.requiredFacts) + ' ' +
  hex(question.solution === 'followup' ? 1 : 0) + '\n' : '';
 const viewStart = presentation.indexOf('@paint\n');
 assert.ok(viewStart >= 0 && presentation.indexOf('@paint\n', viewStart + 1) < 0);
 let knowledgeSource;
 if (knowledge) {
- knowledgeSource = fs.readFileSync('examples/mystery-knowledge.tal', 'utf8');
+ knowledgeSource = fs.readFileSync(`examples/mystery-${fixture}.tal`, 'utf8');
  knowledgeSource = replaceOnce(knowledgeSource, '( KNOWLEDGE-SETUP )', single ? '' : '#0900 #d6 DEO2 #02 #d8 DEO #01 #dc DEO');
- knowledgeSource = replaceOnce(knowledgeSource, '( KNOWLEDGE-RECEIVE )', single ? '' : '#dd DEI #01 EQU ?witness-reply #0b LDZ ?done');
- knowledgeSource = replaceOnce(knowledgeSource, '( KNOWLEDGE-ACCOUNT )', fs.readFileSync('examples/mystery-knowledge-' + (single ? 'local' : 'remote') + '.tal', 'utf8'));
+ knowledgeSource = replaceOnce(knowledgeSource, '( KNOWLEDGE-RECEIVE )', single ? '' : progression ? '#dd DEI #00 EQU ?cora-step #dd DEI #01 EQU ?desk-reply #0b LDZ ?done' : '#dd DEI #01 EQU ?witness-reply #0b LDZ ?done');
+ knowledgeSource = replaceOnce(knowledgeSource, '( KNOWLEDGE-ACCOUNT )', fs.readFileSync(`examples/mystery-${fixture}-` + (single ? 'local' : 'remote') + '.tal', 'utf8'));
 }
 let out = (knowledge ? knowledgeSource + '\n' + presentation.slice(viewStart) + '\n|0f00\n' + rules : single ? fs.readFileSync('examples/mystery-single.tal', 'utf8') +
  '\n' + presentation.slice(viewStart) + '\n|0f00\n' + rules + interaction : presentation) + '\n|1000\n';

@@ -157,6 +157,14 @@ static MysteryMachine *machine(char *error, size_t capacity,
     node_count = 1;
     paths[0] = "build/mystery-knowledge-single.rom";
   }
+  if (variant == MYSTERY_PROGRESSION_MULTI) {
+    node_count = 2;
+    paths[0] = "build/mystery-progression-multi.rom";
+    paths[1] = "build/mystery-progression-desk.rom";
+  } else if (variant == MYSTERY_PROGRESSION_SINGLE) {
+    node_count = 1;
+    paths[0] = "build/mystery-progression-single.rom";
+  }
   if (!m) {
     snprintf(error, capacity, "Cannot allocate mystery.");
     return NULL;
@@ -186,10 +194,20 @@ static MysteryMachine *machine(char *error, size_t capacity,
   const RoutedRoute routes[] = {
       {ROUTED_NONE, 7, 0}, {0, 1, 1}, {1, 1, 0}, {1, 2, 2}, {2, 1, 1}};
   const RunnerDevice device = {0, 0x25, 0x25, NULL, display, m};
+  /* This finite cartridge uses the existing self-route mechanism. No idle
+     ticking, scheduler change, or platform-level narrative responsibility. */
+  const RoutedRoute progression[] = {
+      {ROUTED_NONE, 7, 0}, {0, 1, 1}, {1, 1, 0}, {0, 2, 0}, {1, 2, 1}};
   const RunnerDefinition definition = {
-      roms,    node_count,
-      routes,  node_count == 1 ? 1 : node_count == 2 ? 3 : 5,
-      &device, 1,
+      roms,
+      node_count,
+      variant == MYSTERY_PROGRESSION_MULTI ? progression : routes,
+      variant == MYSTERY_PROGRESSION_MULTI ? 5
+      : node_count == 1                    ? 1
+      : node_count == 2                    ? 3
+                                           : 5,
+      &device,
+      1,
       10000};
   RunnerDiagnostic diagnostic;
   if (!runner_start(&m->runner, &definition, &diagnostic)) {
@@ -250,7 +268,9 @@ bool mystery_init_variant(MysterySession *s, MysteryVariant variant) {
   if (!s || s->live || s->play ||
       (variant != MYSTERY_SINGLE && variant != MYSTERY_COOPERATING &&
        variant != MYSTERY_KNOWLEDGE_MULTI &&
-       variant != MYSTERY_KNOWLEDGE_SINGLE))
+       variant != MYSTERY_KNOWLEDGE_SINGLE &&
+       variant != MYSTERY_PROGRESSION_MULTI &&
+       variant != MYSTERY_PROGRESSION_SINGLE))
     return false;
   memset(s, 0, sizeof(*s));
   s->variant = variant;

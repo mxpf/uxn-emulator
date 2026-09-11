@@ -1,0 +1,37 @@
+( Bram owns 10 phase 0 idle/1 checking/2 closing/3 finished,
+  11 wait-request, 12 sealed, 13 authoritative page location.
+  Self 60 phase continues his own finite round, even without a return.
+  External source is not accepted. An offer never changes the seal history.
+  Wait arriving at phase 2 or later is too late, including after final seal. )
+|0100
+ ;receive #d0 DEO2 #0800 #d2 DEO2
+ #0900 #d6 DEO2 #02 #d8 DEO BRK
+@receive
+ #d4 DEI #02 NEQ ?done
+ #dd DEI #01 EQU ?progress
+ #dd DEI #00 NEQ ?done #0801 LDA ?done
+ #0800 LDA #10 EQU ?ask
+ #0800 LDA #40 EQU ?start
+ #0800 LDA #20 NEQ ?done
+ #10 LDZ #00 EQU ?done #13 LDZ ?done
+ #02 #12 LDZ SUB #13 STZ
+ #31 #0900 STA #13 LDZ #0901 STA #01 !send
+@ask
+ #10 LDZ #02 LTH ?wait !account
+ @wait #01 #11 STZ
+ @account #30 #0900 STA #13 LDZ #0901 STA #01 !send
+@start
+ #10 LDZ ?done #01 #10 STZ !continue
+@progress
+ #0800 LDA #60 NEQ ?done
+ #10 LDZ #01 LTH ?done #10 LDZ #02 GTH ?done
+ #0801 LDA #10 LDZ NEQ ?done
+ #10 LDZ INC #10 STZ
+ #10 LDZ #03 EQU ?seal
+ #11 LDZ ?continue #01 #12 STZ !continue
+ @seal #01 #12 STZ BRK
+@continue
+ #60 #0900 STA #10 LDZ #0901 STA #02
+@send
+ #dc DEO #01 #d9 DEO #d9 DEI ?done #01 #fe STZ
+@done BRK

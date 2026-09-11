@@ -158,6 +158,51 @@ GARDEN_SOURCES := src/garden.c src/constellation.c src/uxn.c
 MYSTERY_SOURCES := src/mystery.c $(RUNNER_SOURCES)
 MYSTERY_ROMS := build/mystery-presentation.rom build/mystery-director.rom build/mystery-deduction.rom
 
+# Finite independent-progression comparison. Local only; not a public target.
+PROGRESSION_ROMS := build/mystery-progression-multi.rom build/mystery-progression-single.rom build/mystery-progression-desk.rom
+PROGRESSION_INPUTS := examples/mystery-progression.json examples/mystery-progression.tal examples/mystery-progression-local.tal examples/mystery-progression-remote.tal examples/mystery-room.json examples/mystery-presentation.tal tools/build_mystery.cjs
+build/mystery-progression-multi.tal build/mystery-progression-single.tal: $(PROGRESSION_INPUTS) | build
+	node tools/build_mystery.cjs $@
+build/mystery-progression-multi.rom: build/mystery-progression-multi.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/mystery-progression-single.rom: build/mystery-progression-single.tal $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) $< $@
+build/test_mystery_progression: tests/test_mystery_progression.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-progression-check mystery-progression-sanitize
+mystery-progression-check: $(PROGRESSION_ROMS) build/test_mystery_progression
+	./build/test_mystery_progression
+	node tests/mystery_progression_authoring_check.cjs
+mystery-progression-sanitize: $(PROGRESSION_ROMS)
+	$(CC) $(CPPFLAGS) -std=c11 -Wall -Wextra -Wpedantic -Werror -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_mystery_progression.c $(MYSTERY_SOURCES) -o build/test_mystery_progression_sanitize
+	./build/test_mystery_progression_sanitize
+
+build/mystery_progression_multi_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_PROGRESSION_MULTI $< $(MYSTERY_SOURCES) -o $@
+build/mystery_progression_single_probe: tests/mystery_probe.c src/mystery_web.c $(MYSTERY_SOURCES) include/mystery.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_PROGRESSION_SINGLE $< $(MYSTERY_SOURCES) -o $@
+.PHONY: mystery-progression-web mystery-progression-web-check
+mystery-progression-web: $(PROGRESSION_ROMS)
+	mkdir -p build/mystery-progression-multi-web build/mystery-progression-single-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_PROGRESSION_MULTI src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-progression-multi.rom --embed-file build/mystery-progression-desk.rom -o build/mystery-progression-multi-web/mystery.js
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) -DMYSTERY_DEFAULT_VARIANT=MYSTERY_PROGRESSION_SINGLE src/mystery_web.c $(MYSTERY_SOURCES) --no-entry \
+		-sMODULARIZE=1 -sEXPORT_NAME=createMystery -sSTACK_SIZE=262144 \
+		-sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		-sEXPORTED_RUNTIME_METHODS=UTF8ToString,HEAPU32 \
+		--embed-file build/mystery-progression-single.rom -o build/mystery-progression-single-web/mystery.js
+	node tools/build_mystery_progression_web.cjs build/mystery-progression-multi-web
+	node tools/build_mystery_progression_web.cjs build/mystery-progression-single-web
+mystery-progression-web-check: mystery-progression-web build/mystery_progression_multi_probe build/mystery_progression_single_probe
+	mkdir -p build/mystery-progression-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/test_mystery_progression.c $(MYSTERY_SOURCES) \
+		-sSTACK_SIZE=262144 -sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=67108864 \
+		--embed-file build/mystery-progression-multi.rom --embed-file build/mystery-progression-desk.rom --embed-file build/mystery-progression-single.rom -o build/mystery-progression-check/check.js
+	node build/mystery-progression-check/check.js
+
 # Local, opt-in Last Visitor deduction comparison; excluded from public builds.
 KNOWLEDGE_ROMS := build/mystery-knowledge-multi.rom build/mystery-knowledge-single.rom build/mystery-knowledge-witness.rom
 KNOWLEDGE_INPUTS := examples/mystery-knowledge.json examples/mystery-knowledge.tal examples/mystery-knowledge-local.tal examples/mystery-knowledge-remote.tal examples/mystery-room.json examples/mystery-presentation.tal tools/build_mystery.cjs

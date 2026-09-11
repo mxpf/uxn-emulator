@@ -1,0 +1,25 @@
+( Ordinary local state: Bram 10 phase, 11 wait-request, 12 sealed,
+  13 page location. Two local progression functions, no messages or simulated
+  per-machine scheduler. One finite scene: fetching / approaching / handing
+  over, interleaved with Bram's checking / sealing / finishing round. )
+@ask-bram
+ #10 LDZ #02 LTH ?ask-in-time !report
+ @ask-in-time #01 #11 STZ
+ @report #13 LDZ !account
+@incident
+ ;cora-progress JSR2 ;bram-progress JSR2
+ ;cora-progress JSR2 ;bram-progress JSR2
+ ;cora-progress JSR2 ;bram-progress JSR2
+ #13 LDZ !returned
+@cora-progress
+ #0c LDZ INC #0c STZ
+ #0c LDZ #03 NEQ ?cora-done
+ #02 #12 LDZ SUB #13 STZ
+ @cora-done JMP2r
+@bram-progress
+ #10 LDZ INC #10 STZ
+ #10 LDZ #02 EQU ?seal-maybe
+ #10 LDZ #03 NEQ ?bram-done
+ #01 #12 STZ JMP2r
+ @seal-maybe #11 LDZ ?bram-done #01 #12 STZ
+ @bram-done JMP2r
