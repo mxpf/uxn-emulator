@@ -1,6 +1,6 @@
-# How the emulator fits together
+# How Mote fits together
 
-A ROM is a file of bytes. The emulator loads those bytes into Uxn memory, reads
+A ROM is a file of bytes. Mote loads those bytes into Uxn memory, reads
 one instruction at a time, and lets Varvara connect the virtual computer to the
 physical one.
 

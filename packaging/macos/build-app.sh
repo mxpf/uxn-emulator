@@ -3,7 +3,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-	printf '%s\n' "usage: $0 uxnemu 'Uxn Emulator.app'" >&2
+	printf '%s\n' "usage: $0 uxnemu Mote.app" >&2
 	exit 64
 fi
 
@@ -16,7 +16,7 @@ binary_path=$1
 app_path=$2
 script_path=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_path=$(CDPATH= cd -- "$script_path/../.." && pwd)
-icon_source="$project_path/assets/branding/uxn-app-icon-v1.png"
+icon_source="$project_path/assets/branding/mote-app-icon.png"
 
 case "$app_path" in
 	*.app) ;;
@@ -60,9 +60,9 @@ mkdir -p "$app_path/Contents/MacOS"
 mkdir -p "$app_path/Contents/Frameworks"
 mkdir -p "$app_path/Contents/Resources"
 
-icon_temp=$(mktemp -d "${TMPDIR:-/tmp}/uxn-emulator-icon.XXXXXX")
+icon_temp=$(mktemp -d "${TMPDIR:-/tmp}/mote-icon.XXXXXX")
 trap 'rm -rf "$icon_temp"' EXIT HUP INT TERM
-iconset_path="$icon_temp/UxnEmulator.iconset"
+iconset_path="$icon_temp/Mote.iconset"
 mkdir -p "$iconset_path"
 
 sips -z 16 16 "$icon_source" --out "$iconset_path/icon_16x16.png" >/dev/null
@@ -75,19 +75,19 @@ sips -z 256 256 "$icon_source" --out "$iconset_path/icon_256x256.png" >/dev/null
 sips -z 512 512 "$icon_source" --out "$iconset_path/icon_256x256@2x.png" >/dev/null
 sips -z 512 512 "$icon_source" --out "$iconset_path/icon_512x512.png" >/dev/null
 sips -z 1024 1024 "$icon_source" --out "$iconset_path/icon_512x512@2x.png" >/dev/null
-iconutil -c icns "$iconset_path" -o "$icon_temp/UxnEmulator.icns"
+iconutil -c icns "$iconset_path" -o "$icon_temp/Mote.icns"
 
 cp "$script_path/Info.plist" "$app_path/Contents/Info.plist"
-cp "$script_path/launch.sh" "$app_path/Contents/MacOS/Uxn Emulator"
+cp "$script_path/launch.sh" "$app_path/Contents/MacOS/Mote"
 cp "$binary_path" "$app_path/Contents/MacOS/uxnemu"
 cp "$sdl_path" "$app_path/Contents/Frameworks/$sdl_name"
 if [ -n "$sdl3_path" ]; then
 	cp -L "$sdl3_path" "$app_path/Contents/Frameworks/$sdl3_name"
 fi
 cp README.md LICENSE "$app_path/Contents/Resources/"
-cp "$icon_temp/UxnEmulator.icns" "$app_path/Contents/Resources/UxnEmulator.icns"
+cp "$icon_temp/Mote.icns" "$app_path/Contents/Resources/Mote.icns"
 
-chmod 0755 "$app_path/Contents/MacOS/Uxn Emulator"
+chmod 0755 "$app_path/Contents/MacOS/Mote"
 chmod 0755 "$app_path/Contents/MacOS/uxnemu"
 chmod u+w "$app_path/Contents/MacOS/uxnemu"
 chmod u+w "$app_path/Contents/Frameworks/$sdl_name"

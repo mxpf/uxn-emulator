@@ -1,6 +1,6 @@
 # Design promise
 
-This emulator has two jobs: run Uxn programs and remain small enough to learn
+Mote has two jobs: run Uxn programs and remain small enough to learn
 from. A feature that weakens either job needs a very good reason to exist.
 
 ## Keep the center fixed
@@ -45,7 +45,7 @@ edge. They are optional in the useful sense: another host can leave them out,
 and every ROM still behaves the same.
 
 Do not add a ROM library, automatic updater, account, telemetry, network
-service, or a permanent preferences system. The optional native application
+service, or a permanent preferences system. The optional Mote application
 bundle packages the existing host and its SDL2 library without changing Uxn or
 Varvara. Its small build script remains separate from the emulator.
 

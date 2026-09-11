@@ -1,8 +1,8 @@
-# Using the emulator
+# Using Mote
 
 ## Use the Mac app
 
-Open the downloaded `.dmg`, then drag **Uxn Emulator** onto its
+Open the downloaded `.dmg`, then drag **Mote** onto its
 **Applications** shortcut. Open the app from Applications and drop a `.rom`
 file onto its window. The app waits for a ROM instead of closing when it starts
 without one.
@@ -12,7 +12,7 @@ its SDL2 library, so SDL2 does not need to be installed separately on the Mac
 that runs the finished app. The source build remains available beside it.
 
 To make and verify the disk image from source, run `make dmg-check`. The file
-is written to `dist/Uxn-Emulator-macOS-<arch>.dmg`. The existing ZIP can still
+is written to `dist/Mote-macOS-<arch>.dmg`. The existing ZIP can still
 be made with `make package`.
 
 ## Start a ROM

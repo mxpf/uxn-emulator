@@ -1,9 +1,14 @@
-# Uxn Emulator
+# Mote
 
-This is a small [Uxn](https://wiki.xxiivv.com/site/uxn.html) and
-[Varvara](https://wiki.xxiivv.com/site/varvara.html) emulator written in C.
-I built it to learn how a virtual computer works by following the whole path
-from bytes in a file to words, pictures, and sound.
+<img src="assets/branding/mote-app-icon.png" alt="Mote app icon" width="160">
+
+*A small Uxn/Varvara emulator in C.*
+
+Mote is a readable implementation of the
+[Uxn](https://wiki.xxiivv.com/site/uxn.html) virtual machine and
+[Varvara](https://wiki.xxiivv.com/site/varvara.html) device environment. I
+built it to learn how a virtual computer works by following the whole path from
+bytes in a file to words, pictures, sound, and working programs.
 
 The project is intentionally readable. The processor, screen, audio, files,
 and desktop window live in separate C files, and the documentation explains
@@ -14,7 +19,7 @@ for Uxn ROMs.
 
 ## What it can do
 
-The emulator provides the current Varvara 79K devices: System, Console,
+Mote provides the current Varvara 79K devices: System, Console,
 Screen, four Audio voices, Controller, Mouse, two File devices, and DateTime.
 
 It builds two programs:
@@ -52,7 +57,7 @@ bin/uxncli program.rom
 
 ## Install the Mac app
 
-Download and open the `.dmg` file for your kind of Mac. Drag **Uxn Emulator**
+Download and open the `.dmg` file for your kind of Mac. Drag **Mote**
 onto the **Applications** shortcut, then open the app from Applications. Drop a
 `.rom` file onto its window to start it. The empty window can stay open while
 you choose a ROM.
@@ -68,7 +73,7 @@ make dmg-check
 open dist
 ```
 
-This creates `dist/Uxn-Emulator-macOS-<arch>.dmg`. Run `make package` if you
+This creates `dist/Mote-macOS-<arch>.dmg`. Run `make package` if you
 also want the existing ZIP archive.
 
 To see the whole path working, build and run the included greeting:
@@ -137,7 +142,7 @@ compared byte for byte.
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
-- [How the emulator works](docs/HOW-IT-WORKS.md) gives a simple diagram of the
+- [How Mote works](docs/HOW-IT-WORKS.md) gives a simple diagram of the
   path from a ROM to the computer.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
 - [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
@@ -150,10 +155,10 @@ compared byte for byte.
 
 Uxn, Varvara, Uxntal, Drifblim, and the programs used for compatibility checks
 come from [Hundred Rabbits](https://100r.ca/site/uxn.html) and the wider Uxn
-community. This is an independent implementation, not an official Hundred
+community. Mote is an independent implementation, not an official Hundred
 Rabbits release.
 
 ## License
 
-The emulator source and its documentation are available under the
+Mote's source and documentation are available under the
 [MIT License](LICENSE).

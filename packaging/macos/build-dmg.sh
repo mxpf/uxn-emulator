@@ -3,7 +3,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-	printf '%s\n' "usage: $0 'Uxn Emulator.app' Uxn-Emulator.dmg" >&2
+	printf '%s\n' "usage: $0 Mote.app Mote.dmg" >&2
 	exit 64
 fi
 
@@ -36,16 +36,16 @@ if [ ! -d "$app_path" ]; then
 	exit 66
 fi
 
-stage_root=$(mktemp -d "${TMPDIR:-/tmp}/uxn-emulator-dmg.XXXXXX")
+stage_root=$(mktemp -d "${TMPDIR:-/tmp}/mote-dmg.XXXXXX")
 trap 'rm -rf "$stage_root"' EXIT HUP INT TERM
-volume_path="$stage_root/Uxn Emulator"
+volume_path="$stage_root/Mote"
 
 mkdir -p "$volume_path"
-ditto "$app_path" "$volume_path/Uxn Emulator.app"
+ditto "$app_path" "$volume_path/Mote.app"
 ln -s /Applications "$volume_path/Applications"
 mkdir -p "$(dirname -- "$dmg_path")"
 rm -f "$dmg_path"
-hdiutil create -quiet -volname 'Uxn Emulator' -srcfolder "$volume_path" \
+hdiutil create -quiet -volname 'Mote' -srcfolder "$volume_path" \
 	-format UDZO "$dmg_path"
 
 if [ ! -s "$dmg_path" ]; then

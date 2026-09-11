@@ -20,15 +20,15 @@ CORE_SOURCES := src/uxn.c src/varvara.c src/varvara_screen.c \
 ROM_SOURCE := src/rom.c
 SDL_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
 SDL_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
-MACOS_APP := dist/Uxn Emulator.app
-MACOS_ARCHIVE := dist/Uxn-Emulator-macOS-$(shell uname -m).zip
-MACOS_DMG := dist/Uxn-Emulator-macOS-$(shell uname -m).dmg
+MACOS_APP := dist/Mote.app
+MACOS_ARCHIVE := dist/Mote-macOS-$(shell uname -m).zip
+MACOS_DMG := dist/Mote-macOS-$(shell uname -m).dmg
 
 .PHONY: all app app-check package dmg dmg-check check test constellation compatibility verify-online real-roms example assembler lesson-memory clean
 
 all: $(BIN) $(EMU_BIN)
 
-app: $(EMU_BIN) packaging/macos/build-app.sh packaging/macos/launch.sh packaging/macos/Info.plist assets/branding/uxn-app-icon-v1.png README.md LICENSE
+app: $(EMU_BIN) packaging/macos/build-app.sh packaging/macos/launch.sh packaging/macos/Info.plist assets/branding/mote-app-icon.png README.md LICENSE
 	sh ./packaging/macos/build-app.sh "$(EMU_BIN)" "$(MACOS_APP)"
 
 package: app
@@ -103,14 +103,18 @@ check: all test $(PIXEL_ROM)
 	@printf '%s\n' 'Offline window check: pass'
 
 app-check: app $(PIXEL_ROM) | build
-	test -s "$(MACOS_APP)/Contents/Resources/UxnEmulator.icns"
-	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$(MACOS_APP)/Contents/Info.plist")" = "UxnEmulator.icns"
+	test -s "$(MACOS_APP)/Contents/Resources/Mote.icns"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$(MACOS_APP)/Contents/Info.plist")" = "Mote"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$(MACOS_APP)/Contents/Info.plist")" = "Mote"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$(MACOS_APP)/Contents/Info.plist")" = "Mote.icns"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$(MACOS_APP)/Contents/Info.plist")" = "haus.keeping.mote"
+	test "$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$(MACOS_APP)/Contents/Info.plist")" = "Mote"
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		"$(MACOS_APP)/Contents/MacOS/Uxn Emulator" \
+		"$(MACOS_APP)/Contents/MacOS/Mote" \
 		--frames 1 --screenshot build/app-wait-screen.bmp
 	test -s build/app-wait-screen.bmp
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		"$(MACOS_APP)/Contents/MacOS/Uxn Emulator" \
+		"$(MACOS_APP)/Contents/MacOS/Mote" \
 		--frames 2 --screenshot build/app-screen.bmp $(PIXEL_ROM)
 	test -s build/app-screen.bmp
 	codesign --verify --deep --strict "$(MACOS_APP)"

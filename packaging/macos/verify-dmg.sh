@@ -3,7 +3,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-	printf '%s\n' "usage: $0 Uxn-Emulator.dmg pixel.rom" >&2
+	printf '%s\n' "usage: $0 Mote.dmg pixel.rom" >&2
 	exit 64
 fi
 
@@ -30,9 +30,9 @@ if [ ! -s "$rom_path" ]; then
 	exit 66
 fi
 
-check_root=$(mktemp -d "${TMPDIR:-/tmp}/uxn-emulator-dmg-check.XXXXXX")
+check_root=$(mktemp -d "${TMPDIR:-/tmp}/mote-dmg-check.XXXXXX")
 mount_path="$check_root/mounted"
-copy_path="$check_root/Applications/Uxn Emulator.app"
+copy_path="$check_root/Applications/Mote.app"
 mounted=0
 
 cleanup()
@@ -51,10 +51,10 @@ mkdir -p "$mount_path" "$(dirname -- "$copy_path")"
 hdiutil attach -quiet -readonly -nobrowse -mountpoint "$mount_path" "$dmg_path"
 mounted=1
 
-mounted_app="$mount_path/Uxn Emulator.app"
+mounted_app="$mount_path/Mote.app"
 applications_link="$mount_path/Applications"
 if [ ! -d "$mounted_app" ]; then
-	printf '%s\n' 'The mounted image does not contain Uxn Emulator.app.' >&2
+	printf '%s\n' 'The mounted image does not contain Mote.app.' >&2
 	exit 65
 fi
 if [ ! -L "$applications_link" ] || [ "$(readlink "$applications_link")" != /Applications ]; then
@@ -77,7 +77,7 @@ fi
 ditto "$mounted_app" "$copy_path"
 codesign --verify --deep --strict "$copy_path"
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-	"$copy_path/Contents/MacOS/Uxn Emulator" \
+	"$copy_path/Contents/MacOS/Mote" \
 	--frames 2 --screenshot "$check_root/copied-app-screen.bmp" "$rom_path"
 if [ ! -s "$check_root/copied-app-screen.bmp" ]; then
 	printf '%s\n' 'The app copied from the disk image did not draw its test screen.' >&2

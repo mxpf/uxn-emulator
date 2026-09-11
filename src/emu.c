@@ -142,7 +142,7 @@ display_init(Display *display, const VarvaraScreen *screen, unsigned int scale,
 			fprintf(stderr, "uxnemu: audio is unavailable: %s\n", SDL_GetError());
 		}
 	}
-	display->window = SDL_CreateWindow("Our Uxn emulator",
+	display->window = SDL_CreateWindow("Mote",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width * (int)scale, height * (int)scale,
 		SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE |
@@ -221,7 +221,7 @@ display_update_title(Display *display, const Varvara *varvara,
 	name[length] = '\0';
 	if(!length)
 		snprintf(name, sizeof(name), "%s", path_name(rom_path));
-	snprintf(title, sizeof(title), "%s - Uxn", name);
+	snprintf(title, sizeof(title), "%s - Mote", name);
 	SDL_SetWindowTitle(display->window, title);
 }
 
@@ -630,7 +630,7 @@ main(int argc, char **argv)
 		display_update_title(&display, varvara, display.rom_path);
 	else
 		SDL_SetWindowTitle(display.window,
-			"Uxn Emulator - drop a ROM here to begin");
+			"Mote - drop a ROM here to begin");
 	varvara_audio_set_sample_rate(varvara, display.audio_rate);
 	standard_input_event = SDL_RegisterEvents(1);
 	if(standard_input_event == (Uint32)-1) {
