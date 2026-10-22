@@ -29,7 +29,7 @@ independent behavior, replacement, or failure containment.
 
 ## Scope and exact limitations of the experiment
 
-Repository: `/Users/mxpf/Projects/uxn-constellation-game`; branch
+Repository: `/Users/mxpf/Code/uxn-constellation-game`; branch
 `constellation-game`; base commit
 `c228e71109d6d78382ad13d7327eff29ab58335a`,
 `Checkpoint bounded Last Visitor knowledge-dependent deduction comparison`.

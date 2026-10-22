@@ -21,7 +21,7 @@ be the project default.
 
 ## Checkpoint and scope
 
-Repository: `/Users/mxpf/Projects/uxn-constellation-game`, branch
+Repository: `/Users/mxpf/Code/uxn-constellation-game`, branch
 `constellation-game`, HEAD `e98b94f` (`Checkpoint data-defined mystery rules with
 accurate startup diagnostics`). The new addition is uncommitted and unpublished.
 The preceding standalone account experiment and other pre-existing untracked
@@ -359,7 +359,7 @@ From the repository root:
 
 ```
 make mystery-knowledge-check mystery-knowledge-sanitize
-source /Users/mxpf/Projects/keepinghaus-emsdk/emsdk_env.sh
+source "/Users/mxpf/Holding/Migration from old Mac/Projects/keepinghaus-emsdk/emsdk_env.sh"
 make mystery-knowledge-web-check
 ```
 

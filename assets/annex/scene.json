@@ -1,0 +1,33 @@
+{
+  "title": "The Last Visitor",
+  "subtitle": "Chapter One · The disused annex",
+  "hotspots": [
+    {"id":"body","title":"The unidentified body","bounds":[174,156,293,206]},
+    {"id":"cradle","title":"Transfer cradle","bounds":[212,46,365,153]},
+    {"id":"controls","title":"Paired controls","bounds":[359,134,428,221]},
+    {"id":"cutoff","title":"Emergency cutoff","bounds":[468,48,503,136]},
+    {"id":"entry","title":"Annex entry mechanism","bounds":[15,42,72,193]},
+    {"id":"token","title":"Tracks and a dropped seal","bounds":[43,215,132,271]},
+    {"id":"conduit","title":"The severed branch","bounds":[335,21,429,67]},
+    {"id":"diagram","title":"Museum installation drawing","bounds":[120,36,199,110]}
+  ],
+  "messages": [
+    "The museum has sealed the annex, not explained it. Beneath a broken clerestory lies an unidentified body, badly damaged. The restoration apparatus is silent. Nothing here should be disturbed until its last use can be understood.",
+    "The face is unrecognizable. The damage is concentrated across the torso, in narrow bands. No single wound explains it. Severe damage; not yet enough to say what caused it.",
+    "A transfer-and-restoration cradle, according to its worn plate. The retaining jaws are still engaged. Its mechanical sequence indicator stopped between TRANSFER and RELEASE. Someone lay here while a procedure was in progress.",
+    "Both starting levers remain latched forward. They are separated by more than a handspan and must be held together to engage. Their clean arcs cut through years of grime. This was not a machine simply waking by itself.",
+    "The emergency cutoff has been pulled. A bright arc scar crosses the newly separated contacts: current was flowing when they parted. The lever interrupts power without returning the cradle to its release position.",
+    "The outer latch is intact. Dust has been brushed from the admission grip; its inner return spring has not fired. One narrow trail of ordinary steps reaches the cradle. No dragged furrow or forced entry is visible. Voluntary entry is plausible, not certain.",
+    "A second, broader bootprint crosses the first trail and turns toward the cutoff. Beside it lies a broken lead seal impressed with a municipal rosette. Neither the prints nor the seal identifies who left them, or when.",
+    "A ceramic collar on this branch has a fresh glassy bloom. Its dust has been blown outward, unlike the surrounding dirt. The branch appears to have carried energy recently. The dark recess reveals no destination.",
+    "The installation drawing labels the upper branch DECOMMISSIONED. A cut and a cap are shown between it and the cradle. The museum's documented circuit ends here. The drawing says nothing about what lies beyond the wall.",
+    "The bands of damage align with the cradle's retaining jaws. With the sequence stopped before release and the cutoff opened under load, the pattern now seems significant. Alignment alone is not yet an explanation; the starting controls still matter.",
+    "Now that the interrupted procedure explains the bands, you examine the protected edge beneath one jaw. The cuff lining is caught inside the band of damage, not torn across it afterward. The person was in the cradle when this happened. A new observation, not an identity.",
+    "The fresh bloom lies beyond the break shown on the museum drawing. That documented dead branch was involved after all. Something outside the documented apparatus connected to the procedure. There is no evidence here of where the branch goes.",
+    "The cut-and-cap mark contradicts the fresh bloom on the branch. Either this drawing is incomplete or the installation no longer matches it. Something outside the documented apparatus connected to the procedure; its destination remains unknown.",
+    "Not enough of this account is supported. Select observations that connect the body's condition to how the apparatus was started, where its sequence stopped, and how power was cut. You can revise the selection without losing any notes.",
+    "These observations raise other questions, but do not all explain the body's condition. Keep the causal account focused on the procedure. The entry, seal and conduit can remain open questions.",
+    "A working account: the apparatus was deliberately started with someone in the cradle, then cut off before release. The pattern of bodily damage is consistent with that interruption, rather than an ordinary blow. This does not establish who started it, who pulled the cutoff, or whether the damage was intended. Return to the body and test the account against it.",
+    "There is no distinct evidence to record at this point. The room's major objects can be inspected in any order."
+  ]
+}

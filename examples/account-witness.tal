@@ -1,0 +1,22 @@
+( Bram: private belief at 11, initialized from authored data.
+  Only authenticated record-node messages can teach it anything. )
+|0100
+;initial-belief LDA #11 STZ
+;receive #d0 DEO2 #0800 #d2 DEO2
+#0900 #d6 DEO2 #02 #d8 DEO #01 #dc DEO BRK
+@receive
+#dd DEI #00 NEQ ?done
+#d4 DEI #01 EQU ?query
+#d4 DEI #02 NEQ ?done
+#0800 LDA #20 NEQ ?done
+#0801 LDA #01 GTH ?done
+#0801 LDA #11 STZ
+#31 !reply
+@query
+#0800 LDA #10 NEQ ?done
+#30
+@reply
+#0900 STA #11 LDZ #0901 STA
+#01 #d9 DEO #d9 DEI ?done
+#01 #fe STZ
+@done BRK

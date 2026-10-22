@@ -1,0 +1,97 @@
+( Annex Slice 01. One cartridge-owned investigation. No narrative host rules.
+  Zero page: 00 seen mask, 01 selection, 02 inference, 03 revisit, 04 anomaly,
+  05 current message, 06 active hotspot 0..7 or ff, 10..17 remembered messages.
+  20..2f scratch. Stable input: 00 x-hi x-lo y-hi y-lo; 01 select-id 0 0 0;
+  02 recall-id 0 0 0; 03 connect 0 0 0. All through external route 7. )
+|0100
+ #ff #06 STZ
+ #013d #08 DEO2 #024c #0a DEO2 #035a #0c DEO2
+ #0200 #22 DEO2 #0120 #24 DEO2
+ ;receive #d0 DEO2 #f000 #d2 DEO2
+ ;background JSR2 BRK
+@receive
+ #dd DEI #ff NEQ ?done #d4 DEI #05 NEQ ?done
+ #f000 LDA #00 EQU ?pointer
+ #f002 LDA #f003 LDA ORA #f004 LDA ORA ?done
+ #f000 LDA #01 EQU ?select
+ #f000 LDA #02 EQU ?recall
+ #f000 LDA #03 NEQ ?done
+ #f001 LDA ?done !connect
+@pointer
+ #f001 LDA2 #0200 LTH2 #00 EQU ?done
+ #f003 LDA2 #0120 LTH2 #00 EQU ?done
+ #00 #20 STZ ;hotspots
+ @hit-loop
+ DUP2 LDA2 #f001 LDA2 GTH2 ?hit-next
+ DUP2 #0002 ADD2 LDA2 #f003 LDA2 GTH2 ?hit-next
+ DUP2 #0004 ADD2 LDA2 #f001 LDA2 GTH2 #00 EQU ?hit-next
+ DUP2 #0006 ADD2 LDA2 #f003 LDA2 GTH2 #00 EQU ?hit-next
+ POP2 !inspect
+ @hit-next #20 LDZ INC #20 STZ #0008 ADD2
+ #20 LDZ #08 LTH ?hit-loop
+ POP2 #10 #05 STZ BRK
+@inspect
+ #20 LDZ #06 STZ
+ #01 #20 LDZ #40 SFT #00 LDZ ORA #00 STZ
+ #20 LDZ INC #05 STZ
+ #20 LDZ #00 EQU ?body
+ #20 LDZ #06 EQU ?conduit
+ #20 LDZ #07 EQU ?diagram
+ !remember
+@body
+ #02 LDZ ?revisit
+ #00 LDZ #0a AND #0a NEQ ?remember
+ #09 #05 STZ !remember
+@revisit #01 #03 STZ #0a #05 STZ !remember
+@conduit
+ #00 LDZ #80 AND #00 EQU ?remember
+ #01 #04 STZ #0b #05 STZ !remember
+@diagram
+ #00 LDZ #40 AND #00 EQU ?remember
+ #01 #04 STZ #0c #05 STZ
+@remember
+ #05 LDZ #20 LDZ #10 ADD STZ
+ ;highlight JSR2 #30 ;cue JSR2 BRK
+@select
+ #f001 LDA #08 LTH #00 EQU ?done
+ #01 #f001 LDA #40 SFT DUP #00 LDZ AND #00 EQU ?discard
+ #01 LDZ EOR #01 STZ BRK
+@discard POP BRK
+@recall
+ #f001 LDA #08 LTH #00 EQU ?done
+ #01 #f001 LDA #40 SFT #00 LDZ AND #00 EQU ?done
+ #f001 LDA #10 ADD LDZ #05 STZ BRK
+@connect
+ #01 LDZ #0f AND #0f NEQ ?missing
+ #01 LDZ #0f NEQ ?irrelevant
+ #01 #02 STZ #0f #05 STZ #3c ;cue JSR2 BRK
+@missing #0d #05 STZ #24 ;cue JSR2 BRK
+@irrelevant #0e #05 STZ #24 ;cue JSR2 BRK
+@done BRK
+
+( Standard Varvara 2bpp tiles. 64 columns, 36 rows. Embedded, no loader. )
+@background
+ #0000 #28 DEO2 #0000 #2a DEO2 ;tiles #2c DEO2 #05 #26 DEO
+ #00 #21 STZ
+ @row #00 #22 STZ #0000 #28 DEO2
+ @tile #81 #2f DEO #22 LDZ INC #22 STZ #22 LDZ #40 LTH ?tile
+ #2a DEI2 #0008 ADD2 #2a DEO2
+ #21 LDZ INC #21 STZ #21 LDZ #24 LTH ?row
+ #00 #26 DEO JMP2r
+( Selected object corner brackets on foreground; no artwork replacement. )
+@highlight
+ #0000 #28 DEO2 #0000 #2a DEO2 #c0 #2e DEO
+ #00 #20 LDZ #30 SFT2 ;hotspots ADD2 #24 STZ2
+ #24 LDZ2 LDA2 #28 DEO2 #24 LDZ2 #0002 ADD2 LDA2 #2a DEO2
+ ;corner JSR2
+ #24 LDZ2 #0004 ADD2 LDA2 #0007 SUB2 #28 DEO2
+ #24 LDZ2 #0006 ADD2 LDA2 #0007 SUB2 #2a DEO2
+ ;corner JSR2 JMP2r
+@corner
+ #01 #26 DEO #00 #23 STZ
+ @edge #43 #2e DEO #23 LDZ INC #23 STZ #23 LDZ #07 LTH ?edge
+ #02 #26 DEO #00 #23 STZ
+ @down #43 #2e DEO #23 LDZ INC #23 STZ #23 LDZ #07 LTH ?down
+ #00 #26 DEO JMP2r
+@cue
+ #0111 #38 DEO2 #0040 #3a DEO2 ;wave #3c DEO2 #22 #3e DEO #3f DEO JMP2r

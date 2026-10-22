@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Last Visitor — Account Study</title>
+<style>
+body{font:17px/1.6 system-ui,sans-serif;color:#172a38;background:#f4f1e9;margin:0}
+main{max-width:760px;margin:auto;padding:28px 20px}h1{font-size:1.7rem;margin:0}
+button,select{font:inherit;border:1px solid #73808a;border-radius:6px;padding:9px 13px;background:white;color:inherit;min-height:46px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.6 ui-monospace,monospace;background:white;padding:18px;border:1px solid #c9c9c1;border-radius:6px}
+#status{min-height:26px}summary{cursor:pointer}small{display:block}
+</style>
+<main>
+<h1>The Last Visitor: an account study</h1>
+<p>A small alternate fixture, not the full mystery. The desk records the returned page. Bram does not learn about it unless you show him the entry.</p>
+<label>Implementation <select id="variant"><option value="0">Two ROMs — private account</option><option value="1">One ROM — control</option></select></label>
+<small>Changing implementation starts a fresh session.</small>
+<nav aria-label="Actions">
+<button data-action="1" disabled>1 · Read record</button><button data-action="2" disabled>2 · Ask Bram</button>
+<button data-action="3" disabled>3 · Return page</button><button data-action="4" disabled>4 · Show entry</button>
+</nav>
+<pre id="output" aria-label="Narrative transcript" aria-live="polite">Loading…</pre>
+<nav><button id="replay" disabled>Verify replay</button><button id="reset" disabled>Restart</button></nav>
+<p id="status" role="status"></p>
+<details><summary>Exact routed trace</summary>
+<p>Kind 0 boot, 1 turn, 2 send, 4 deliver, 5 idle. Values are hexadecimal except sequence and kind. Node 0 is the record; node 1 is Bram; ff is external input. Payload 10 asks, 20 teaches, 30 answers, 31 acknowledges. The following byte is 00 kept or 01 returned.</p>
+<pre id="trace"></pre></details>
+</main>
+<script src="account.js"></script>
+<script>
+createAccount().then(m=>{
+ const status=document.querySelector('#status'),variant=document.querySelector('#variant');
+ const draw=()=>{document.querySelector('#output').textContent=m.UTF8ToString(m._study_output());document.querySelector('#trace').textContent=m.UTF8ToString(m._study_trace());};
+ const reset=()=>{status.textContent=m._study_reset(Number(variant.value))?'Ready — 64 actions per recording.':'Startup failed.';draw();};
+ const action=n=>{status.textContent=m._study_action(n)?'Recorded.':'Input refused; restart if the recording is full.';draw();};
+ document.querySelectorAll('button').forEach(b=>b.disabled=false);
+ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>action(Number(b.dataset.action)));
+ document.querySelector('#reset').onclick=reset;variant.onchange=reset;
+ document.querySelector('#replay').onclick=()=>{status.textContent=m._study_replay()?'Replay verified: exact state, messages and output.':'Replay failed.';};
+ document.addEventListener('keydown',e=>{if(!e.repeat && /^[1-4]$/.test(e.key) && e.target.tagName!=='SELECT'){e.preventDefault();action(Number(e.key));}});
+ reset();
+}).catch(e=>{document.querySelector('#status').textContent='Could not load the experiment.';console.error(e);});
+</script></html>

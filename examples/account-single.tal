@@ -1,0 +1,25 @@
+( Single control: record at 10, Bram's belief at 11.
+  Separate state, but no memory-enforced boundary or internal message bus. )
+|0100
+;initial-belief LDA #11 STZ
+;receive #d0 DEO2 #0800 #d2 DEO2 !record
+@receive
+#dd DEI #ff NEQ ?done
+#d4 DEI #01 NEQ ?done
+#0800 LDA #01 EQU ?record
+#0800 LDA #02 EQU ?ask
+#0800 LDA #03 EQU ?return
+#0800 LDA #04 EQU ?share
+BRK
+@record
+#10 LDZ ?returned-record
+;record-kept !say
+@returned-record ;record-returned !say
+@return #01 #10 STZ !record
+@ask
+#11 LDZ ?returned-answer
+;belief-kept !say
+@returned-answer ;belief-returned !say
+@share
+#10 LDZ #11 STZ ;shared !say
+@done BRK
