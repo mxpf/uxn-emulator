@@ -2,161 +2,105 @@
 
 <img src="assets/branding/mote-app-icon.png" alt="Mote app icon" width="160">
 
-*A small Uxn/Varvara emulator in C.*
+Mote is a small emulator for [Uxn](https://wiki.xxiivv.com/site/uxn.html) and
+[Varvara](https://wiki.xxiivv.com/site/varvara.html), written in C. I built it
+to learn how a computer turns bytes in a file into words, pictures, and sound.
+The processor, screen, audio, and file handling live in separate C files so
+you can follow one part at a time.
 
-Mote is a readable implementation of the
-[Uxn](https://wiki.xxiivv.com/site/uxn.html) virtual machine and
-[Varvara](https://wiki.xxiivv.com/site/varvara.html) device environment. I
-built it to learn how a virtual computer works by following the whole path from
-bytes in a file to words, pictures, sound, and working programs.
-
-The project is intentionally readable. The processor, screen, audio, files,
-and desktop window live in separate C files, and the documentation explains
-why each part exists. It is a learning project, but it is also a working host
-for Uxn ROMs.
-
-**[Read the complete beginner tutorial](https://keeping.haus/a-small-computer-we-can-understand/)**
+If you're new to the project, start with [How Mote works](docs/HOW-IT-WORKS.md)
+or try the [first hands-on lesson](lessons/00-workshop.md).
 
 ## What it can do
 
-Mote provides the current Varvara 79K devices: System, Console,
-Screen, four Audio voices, Controller, Mouse, two File devices, and DateTime.
-
-It builds two programs:
+Mote runs Uxn programs, called ROMs. It builds two programs.
 
 - `uxncli` runs text programs and tools in the terminal.
 - `uxnemu` runs programs with a window, sound, keyboard, mouse, and game
   controller input.
 
-The window can also open a ROM by drag and drop. If the ROM includes a name in
-its Varvara metadata, that name appears in the title bar.
+You can drop a `.rom` file onto the window to open it. If the ROM includes a
+name, Mote shows it in the title bar.
 
-## Start locally
+## Build and run on macOS
 
-The project has been built and tested on macOS. The command-line host needs a
-C compiler and Make. The windowed host also needs SDL2.
+You’ll need the Xcode Command Line Tools for the C compiler and Make. With
+Homebrew installed, run the following commands to build both programs.
 
 ```bash
-brew install sdl2 pkg-config
+brew install sdl2-compat pkgconf
 git clone https://github.com/mxpf/uxn-emulator.git
 cd uxn-emulator
 make
 ```
 
-Run a graphical or audio ROM:
+For the terminal version alone, run `make bin/uxncli`. It needs a C compiler
+and Make. The windowed version also needs SDL2 and `pkg-config`.
+
+To start a ROM, pass its filename to either program.
 
 ```bash
 bin/uxnemu program.rom
-```
-
-Run a terminal ROM:
-
-```bash
 bin/uxncli program.rom
 ```
 
-## Install the Mac app
+To try the included greeting, run `make example`. On the first run, it uses
+`curl` and `xxd` to fetch and unpack the Drifblim assembler. Mote then runs
+Drifblim to assemble the example and runs the resulting ROM. It prints
+`Hello from our Uxn!`.
 
-Download and open the `.dmg` file for your kind of Mac. Drag **Mote**
-onto the **Applications** shortcut, then open the app from Applications. Drop a
-`.rom` file onto its window to start it. The empty window can stay open while
-you choose a ROM.
+## Make a Mac app
 
-The app includes the SDL2 library used for its window and sound. It is locally
-signed but not notarized by Apple, so the first launch after downloading may
-require right-clicking the app and choosing **Open**.
+On a Mac with the build tools above, run `make dmg-check` to build and test
+the disk image. Open `dist/Mote-macOS-<arch>.dmg`, drag **Mote** into
+**Applications**, and open it from there. The app includes the libraries it
+needs for graphics and sound. `make package` creates a ZIP instead.
 
-To build and check the drag-to-install disk image from source:
+The package is signed locally without Apple notarization. If macOS blocks
+a copy you received, see [Apple's guidance on opening apps safely](https://support.apple.com/en-us/102445).
 
-```bash
-make dmg-check
-open dist
-```
+## File and command access
 
-This creates `dist/Mote-macOS-<arch>.dmg`. Run `make package` if you
-also want the existing ZIP archive.
-
-To see the whole path working, build and run the included greeting:
-
-```bash
-make example
-```
-
-This runs the Drifblim assembler inside the emulator, turns readable Uxntal
-into a ROM, and then runs that ROM. The result is:
-
-```text
-Hello from our Uxn!
-```
-
-## A small safety boundary
-
-ROMs can ask Varvara to use files or start commands on the host computer. File
-access stays inside the folder where the emulator was started. A trusted ROM
-can receive wider access for one run:
+By default, a ROM can use files inside the folder where Mote started. Starting
+commands on your computer is off by default. For a ROM you trust, you can
+allow either action for one run.
 
 ```bash
 bin/uxnemu --allow-filesystem program.rom
 bin/uxnemu --allow-exec program.rom
 ```
 
-The permissions are separate, off by default, and never remembered.
+`--allow-filesystem` lets the ROM use files outside that folder. On hosts that
+support it, `--allow-exec` lets the ROM run commands with your user account's
+permissions. Mote treats the permissions separately and never saves them.
 
 ## Check the work
 
-Run the complete offline build and test suite:
+Run `make check` for the offline tests. It builds both programs, checks the
+processor, devices, keyboard and mouse input, and the Constellation prototype,
+then runs a small ROM and saves a screenshot without opening a window. The
+test uses `xxd` to unpack the ROM.
 
-```bash
-make check
-```
-
-This performs 411 processor and device checks and 56 SDL host-input checks,
-then runs a small graphical ROM without opening a visible window. One check
-uses a ROM file that crosses from bank zero into bank one, copies known
-bank-one data back through the existing System expansion device, and compares
-the guest's exact output. Another check interleaves the two File devices and
-compares their separate files and read positions exactly. The Audio checks run
-each of the four voices separately at exact sample positions, then combine
-three voices to check basic mixing and separate left and right volume. The
-System checks cover fill, both copy directions, bank-edge limits, stack
-pointers, and exact debug output. The SDL checks send Return, left Shift,
-mouse movement, and left-button events through the same host event handler
-used by `uxnemu`, then have a tiny ROM record the exact values it receives.
-
-When an internet connection is available, compare the emulator with current
-official tests and real Hundred Rabbits programs:
-
-```bash
-make verify-online
-```
-
-The current implementation passes the official opcode and device checks. It
-has also assembled and opened all eight applications listed in the Hundred
-Rabbits [ROM collection](https://wiki.xxiivv.com/site/roms.html), with added
-checks for typing, drawing, saving files, and producing sound. Left also
-completes a repeatable load, edit, save, and reopen workflow whose text is
-compared byte for byte.
+Run `make verify-online` to download and run the upstream tests and sample
+programs from Hundred Rabbits. It also needs `curl`, `xxd`, and `rg`
+(`brew install ripgrep`). See the [compatibility notes](docs/COMPATIBILITY.md)
+for the last recorded results and what each test covers.
 
 ## Read further
 
 - [Design promise](DESIGN.md) explains what belongs in the project and where
   it stops.
 - [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
-- [How Mote works](docs/HOW-IT-WORKS.md) gives a simple diagram of the
-  path from a ROM to the computer.
 - [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
-- [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
-- [Constellation v0](docs/CONSTELLATION-V0.md) documents the isolated two-ROM
-  message-passing prototype.
-- [Why We Built a Small Virtual Computer](https://keeping.haus/why-we-built-a-small-virtual-computer/)
-  explains the larger idea behind the project.
+- [Constellation v0](docs/CONSTELLATION-V0.md) shows how two ROMs can send
+  messages to each other. [Playinghaus](https://playing.haus/) hosts browser
+  cartridges built from the Constellation branch of this repository.
 
 ## Acknowledgements
 
 Uxn, Varvara, Uxntal, Drifblim, and the programs used for compatibility checks
 come from [Hundred Rabbits](https://100r.ca/site/uxn.html) and the wider Uxn
-community. Mote is an independent implementation, not an official Hundred
-Rabbits release.
+community. Mote is an independent implementation.
 
 ## License
 
