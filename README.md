@@ -155,6 +155,9 @@ and validation guarantees; this does not add filesystem access to the emulator.
   browser preview with `make mystery-web`; it is not in the public collection.
   The [single-ROM control](docs/MYSTERY-SINGLE.md) runs the same mystery with
   `make mystery-single`; `make mystery-compare-check` compares both designs.
+  The separate [private-account study](docs/ACCOUNT-BOUNDARY.md) compares an
+  isolated witness belief against an equivalent single-ROM control; it is not
+  part of the public release or a new architecture decision.
   The subsequent [knowledge-dependent deduction](docs/LAST-VISITOR-KNOWLEDGE-DEDUCTION.md)
   integrates that question into the actual mystery, with a private witness and
   natural single-ROM control. Run `make mystery-knowledge-check`; local only.

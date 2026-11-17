@@ -1,0 +1,42 @@
+( Account fixture: 10 authoritative record, 12 pending request.
+  Node 0 owns the record and text output. Node 1 alone owns Bram's belief. )
+|0100
+;receive #d0 DEO2 #0800 #d2 DEO2
+#0900 #d6 DEO2 #01 #dc DEO
+!record
+@receive
+#dd DEI #ff EQU ?input
+#dd DEI #01 NEQ ?done
+#d4 DEI #02 NEQ ?done
+#0801 LDA #01 GTH ?done
+#12 LDZ #02 EQU ?answer
+#12 LDZ #04 NEQ ?done
+#0800 LDA #31 NEQ ?done
+#00 #12 STZ ;shared !say
+@answer
+#0800 LDA #30 NEQ ?done
+#00 #12 STZ
+#0801 LDA ?returned-answer
+;belief-kept !say
+@returned-answer ;belief-returned !say
+@input
+#d4 DEI #01 NEQ ?done
+#12 LDZ ?done
+#0800 LDA #01 EQU ?record
+#0800 LDA #02 EQU ?ask
+#0800 LDA #03 EQU ?return
+#0800 LDA #04 EQU ?share
+BRK
+@record
+#10 LDZ ?returned-record
+;record-kept !say
+@returned-record ;record-returned !say
+@return #01 #10 STZ !record
+@ask
+#02 #12 STZ #10 #0900 STA #01 #d8 DEO !send
+@share
+#04 #12 STZ #20 #0900 STA #10 LDZ #0901 STA #02 #d8 DEO
+@send
+#01 #d9 DEO #d9 DEI ?done
+#01 #fe STZ
+@done BRK

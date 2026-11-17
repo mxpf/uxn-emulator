@@ -520,3 +520,35 @@ mystery-rules-web: mystery-single-web build/mystery-single-retained.rom
 		--embed-file build/mystery-single-retained.rom@build/mystery-single.rom -o build/mystery-retained-check/mystery.js
 mystery-rules-web-check: mystery-rules-web build/mystery_single_probe
 	node tests/mystery_rules_web_check.cjs
+
+# Isolated account/record experiment, not part of playing-web or Last Visitor.
+ACCOUNT_SOURCES := src/account.c $(RUNNER_SOURCES)
+ACCOUNT_ROMS := build/account-record.rom build/account-witness.rom build/account-single.rom
+build/account-data.stamp: tools/build_account.cjs examples/account.json examples/account-record.tal examples/account-witness.tal examples/account-single.tal | build
+	node tools/build_account.cjs
+	touch $@
+$(ACCOUNT_ROMS): build/account-%.rom: build/account-data.stamp $(ASSEMBLER_ROM) $(BIN)
+	./$(BIN) $(ASSEMBLER_ROM) build/account-$*.tal $@
+build/test_account: tests/test_account.c $(ACCOUNT_SOURCES) include/account.h | build
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_account.c $(ACCOUNT_SOURCES) -o $@
+bin/account-study: tools/account_play.c $(ACCOUNT_SOURCES) include/account.h | bin
+	$(CC) $(CPPFLAGS) $(CFLAGS) tools/account_play.c $(ACCOUNT_SOURCES) -o $@
+.PHONY: account-check account-sanitize
+account-check: $(ACCOUNT_ROMS) build/test_account bin/account-study
+	./build/test_account
+	./bin/account-study multi 13242
+	./bin/account-study single 13242
+	node tests/account_authoring_check.cjs
+account-sanitize: $(ACCOUNT_ROMS)
+	$(CC) $(CPPFLAGS) -std=c11 -Wall -Wextra -Wpedantic -Werror -O1 -g -fsanitize=address,undefined tests/test_account.c $(ACCOUNT_SOURCES) -o build/test_account_sanitize
+	./build/test_account_sanitize
+
+.PHONY: account-web account-web-check
+account-web: $(ACCOUNT_ROMS)
+	mkdir -p build/account-web
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tools/account_play.c $(ACCOUNT_SOURCES) --no-entry -sMODULARIZE=1 -sEXPORT_NAME=createAccount -sSTACK_SIZE=262144 -sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=UTF8ToString --embed-file build/account-record.rom --embed-file build/account-witness.rom --embed-file build/account-single.rom -o build/account-web/account.js
+	cp web/account/index.html build/account-web/
+account-web-check: account-web
+	mkdir -p build/account-check
+	$(EMCC) $(CPPFLAGS) $(CFLAGS) tests/test_account.c $(ACCOUNT_SOURCES) -sSTACK_SIZE=262144 -sINITIAL_MEMORY=33554432 -sALLOW_MEMORY_GROWTH=1 -sEXIT_RUNTIME=1 --embed-file build/account-record.rom --embed-file build/account-witness.rom --embed-file build/account-single.rom -o build/account-check/check.js
+	node build/account-check/check.js

@@ -1,0 +1,10 @@
+{
+  "initialBelief": 0,
+  "text": {
+    "record-kept": "DESK RECORD: CORA KEPT THE LEDGER PAGE.",
+    "record-returned": "DESK RECORD: THE PAGE IS NOW BACK IN THE DRAWER.",
+    "belief-kept": "BRAM: CORA STILL HAS THE PAGE.",
+    "belief-returned": "BRAM: THE PAGE IS BACK IN THE DRAWER.",
+    "shared": "YOU SHOW BRAM THE CURRENT DESK ENTRY."
+  }
+}
