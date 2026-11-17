@@ -1,189 +1,122 @@
-# Uxn Emulator
+# Uxn Emulator and Constellation
 
 This is a small [Uxn](https://wiki.xxiivv.com/site/uxn.html) and
 [Varvara](https://wiki.xxiivv.com/site/varvara.html) emulator written in C.
-I built it to learn how a virtual computer works by following the whole path
-from bytes in a file to words, pictures, and sound.
+I built it to learn how a virtual computer turns bytes in a file into words,
+pictures, and sound. The processor, screen, audio, files, and window each live
+in their own C files so you can follow what happens one piece at a time.
 
-The project is intentionally readable. The processor, screen, audio, files,
-and desktop window live in separate C files, and the documentation explains
-why each part exists. It is a learning project, but it is also a working host
-for Uxn ROMs.
+Constellation uses this emulator to explore how much a small virtual machine
+can do. Some cartridges run one Uxn program. Others let several programs pass
+messages to each other. The experiments compare what each approach gives the
+person making or playing the game. [Project design](DESIGN.md#constellations-north-star)
 
-**[Read the complete beginner tutorial](https://keeping.haus/a-small-computer-we-can-understand/)**
+## Play in your browser
 
-## What it can do
+[Playinghaus](https://playing.haus/) has three cartridges you can open now.
 
-The emulator provides the current Varvara 79K devices: System, Console,
-Screen, four Audio voices, Controller, Mouse, two File devices, and DateTime.
+| Cartridge | What you do | Run on macOS |
+| --- | --- | --- |
+| [Tiny Neighbors](https://playing.haus/tiny-neighbors/) | Walk around a garden and greet a creature. | `make garden` |
+| [No Escape!](https://playing.haus/no-escape/) | Move a square with the arrow keys and replay your moves. | `make square` |
+| [Sketchpad](https://playing.haus/sketchpad/) | Draw, erase, save, and reopen a small pixel drawing. | `make sketchpad` |
 
-It builds two programs:
+The [Tiny Neighbors](docs/TINY-NEIGHBORS.md), [No Escape!](docs/SQUARE-DEMO.md),
+and [Sketchpad guides](docs/SKETCHPAD.md) cover the controls and how each
+cartridge works.
 
-- `uxncli` runs text programs and tools in the terminal.
-- `uxnemu` runs programs with a window, sound, keyboard, mouse, and game
-  controller input.
+## Build the emulator
 
-The window can also open a ROM by drag and drop. If the ROM includes a name in
-its Varvara metadata, that name appears in the title bar.
+Get the branch that includes Constellation and the Playinghaus source.
 
-## Start locally
-
-The project has been built and tested on macOS. The command-line host needs a
-C compiler and Make. The windowed host also needs SDL2.
-
-```bash
-brew install sdl2 pkg-config
-git clone https://github.com/mxpf/uxn-emulator.git
+```sh
+git clone --branch constellation-game https://github.com/mxpf/uxn-emulator.git
 cd uxn-emulator
-make
 ```
 
-Run a graphical or audio ROM:
+The terminal program needs a C compiler and Make. The windowed program also
+needs SDL2. The checks and ROM builds use `xxd`.
 
-```bash
-bin/uxnemu program.rom
-```
+### macOS
 
-Run a terminal ROM:
+With Xcode Command Line Tools and Homebrew installed, build and check both runners.
 
-```bash
-bin/uxncli program.rom
-```
-
-To see the whole path working, build and run the included greeting:
-
-```bash
-make example
-```
-
-This runs the Drifblim assembler inside the emulator, turns readable Uxntal
-into a ROM, and then runs that ROM. The result is:
-
-```text
-Hello from our Uxn!
-```
-
-## A small safety boundary
-
-ROMs can ask Varvara to use files or start commands on the host computer. File
-access stays inside the folder where the emulator was started. A trusted ROM
-can receive wider access for one run:
-
-```bash
-bin/uxnemu --allow-filesystem program.rom
-bin/uxnemu --allow-exec program.rom
-```
-
-The permissions are separate, off by default, and never remembered.
-
-## Check the work
-
-Run the complete offline build and test suite:
-
-```bash
+```sh
+brew install sdl2 pkg-config
 make check
 ```
 
-This performs 200 processor and device checks, then runs a small graphical ROM
-without opening a visible window.
+### Windows 11
 
-When an internet connection is available, compare the emulator with current
-official tests and real Hundred Rabbits programs:
+The emulator has been built and tested in the [MSYS2 UCRT64 shell](https://www.msys2.org/docs/environments/)
+using MSYS2's POSIX GCC and SDL2. Install the packages below and put `xxd` on
+your path. The `export` line uses the default Git for Windows install location.
 
-```bash
-make verify-online
+```sh
+pacman -S --needed gcc make mingw-w64-ucrt-x86_64-SDL2
+export PATH="$PATH:/c/Program Files/Git/usr/bin"
+make check \
+  CC='/usr/bin/gcc -Wno-error=enum-compare -Wno-error=restrict' \
+  SDL_CFLAGS='-I/ucrt64/include/SDL2 -DSDL_beginthread=0 -DSDL_endthread=0' \
+  SDL_LIBS='-L/ucrt64/lib -lSDL2'
 ```
 
-The current implementation passes the official opcode and device checks. It
-has also assembled and opened all eight applications listed in the Hundred
-Rabbits [ROM collection](https://wiki.xxiivv.com/site/roms.html), with added
-checks for typing, drawing, saving files, and producing sound.
+`make check` builds both programs, runs the emulator and Constellation tests,
+and saves a picture from a small test ROM without opening a window. On Windows
+11, that ROM has also been checked in a visible emulator window.
+
+## Run a ROM
+
+Use `bin/uxncli program.rom` for terminal programs or `bin/uxnemu program.rom`
+for graphics, sound, and keyboard, mouse, or controller input. You can also drop
+a `.rom` file onto the window. On Windows, the executables have an `.exe` suffix.
+
+For a first example, run `make example`. The first run downloads the Drifblim
+assembler. The emulator uses it to turn `examples/hello.tal` into a ROM, then
+runs that ROM to print `Hello from our Uxn!`.
+
+By default, a ROM can read and write files inside the folder where you started
+the emulator. Access outside that folder and permission to run host commands
+are separate options for trusted ROMs. Both reset when you close the program.
+[Emulator controls and permissions](docs/USER-GUIDE.md)
+
+## Build Playinghaus locally
+
+With Emscripten 4.0.15 active, build the three browser cartridges and serve the
+output with Python 3.
+
+```sh
+make playing-web
+python3 -m http.server 8766 --bind 127.0.0.1 --directory build/web
+```
+
+Open [the local Playinghaus preview](http://127.0.0.1:8766/). If your shell
+uses `python` for Python 3, use that in the server command. The
+[release guide](docs/PUBLISHING.md) lists the native, WebAssembly, and browser
+checks for the full collection.
 
 ## Read further
 
-Constellation explores sophisticated software built from compatible Uxn
-machines; using multiple machines is a hypothesis, not a requirement. The next
-milestone is a complete cartridge, evaluated against simpler single-machine
-approaches. See the [north star](DESIGN.md#constellations-north-star) and
-[architecture comparison plan](docs/CARTRIDGE-COMPARISON.md).
-
-Build its browser version with `make garden-web-check` (Emscripten required),
-then serve `build/web/`. See [browser instructions and portability contract](docs/TINY-NEIGHBORS.md#browser-host).
-
-Try the first Constellation game with `make garden`: a two-ROM garden with a
-wandering creature, a live message panel, and recorded input replay. See
-[Tiny Neighbors](docs/TINY-NEIGHBORS.md) for controls and the protocol.
-Its [measured baseline](docs/GARDEN-BASELINE.md) records cross-host tests,
-resource use, and what the two-ROM prototype does and does not prove.
-
-Try the separate multi-ROM [routing experiment](docs/CONSTELLATION-ROUTES.md)
-with `make constellation-routes`: three unchanged Uxn ROMs, cartridge-declared
-routes, independent bounded queues, and full-state deterministic replay checks.
-It does not replace v0 or impose game-specific roles.
-`make constellation-sustained` checks 1,024 acknowledged cycles, repeated queue
-recovery, and exact replay with different bounded trace-consumption intervals.
-
-Try `make square` for a minimal interactive demo on that routed host: arrow
-keys move a square through three ROMs, `R` replays the recorded session, and
-`N` starts over. See [Square demo](docs/SQUARE-DEMO.md); `make square-check`
-checks movement, pixels, window controls, and exact replay.
-
-The demo uses a [shared application runner](docs/CONSTELLATION-RUNNER.md):
-an in-memory declaration of ROMs, routes, optional device attachments and an
-instruction ceiling, without prescribed game roles. `make runner-check`
-checks branching/reordered applications and startup failures;
-`make runner-web-check` repeats the behavior/diagnostic suite in WebAssembly.
-
-[Sketchpad](docs/SKETCHPAD.md) is a second, non-game application: one ROM owns
-a small sheet of pixels, using its own attached display and input mapping.
-`make sketchpad` runs it natively; `make playing-web` includes it as the third
-cartridge, at `/sketchpad/`. `make sketch-check` and `make sketch-web-check` verify its
-drawing model and native/browser determinism without changing the runner.
-Sketchpad can also save and reopen an application-owned `.sketch` document,
-including drawings shared between native and browser versions. See its
-[document contract](docs/SKETCHPAD-DOCUMENT.md) for the bounded input attachment
-and validation guarantees; this does not add filesystem access to the emulator.
-
-- [Design promise](DESIGN.md) explains what belongs in the project and where
-  it stops.
-- [The Last Visitor reasoning study](docs/MYSTERY-OPENING.md) tests the larger
-  locked-room experiment with three accounts, six facts, a contradiction and
-  a player-built three-part conclusion across three cartridge-owned ROMs.
-  An optional discovery-gated question now changes the accepted conclusion
-  through explicit cartridge messages, without shared-runtime changes.
-  Run `make mystery` or build the private
-  browser preview with `make mystery-web`; it is not in the public collection.
-  The [single-ROM control](docs/MYSTERY-SINGLE.md) runs the same mystery with
-  `make mystery-single`; `make mystery-compare-check` compares both designs.
-  The separate [private-account study](docs/ACCOUNT-BOUNDARY.md) compares an
-  isolated witness belief against an equivalent single-ROM control; it is not
-  part of the public release or a new architecture decision.
-  The subsequent [knowledge-dependent deduction](docs/LAST-VISITOR-KNOWLEDGE-DEDUCTION.md)
-  integrates that question into the actual mystery, with a private witness and
-  natural single-ROM control. Run `make mystery-knowledge-check`; local only.
-  The bounded [independent-progression comparison](docs/LAST-VISITOR-INDEPENDENT-PROGRESSION.md)
-  tests a page return during Bram's closing round, including a natural local
-  control and a timing-revision probe. Run `make mystery-progression-check`;
-  this is local evidence, not an architecture choice or public release.
-  [Data-defined question variants](docs/MYSTERY-RULES.md) change a prerequisite
-  and consequence with identical executable code; `make mystery-rules-check`
-  verifies both without changing the shared host.
-- [User guide](docs/USER-GUIDE.md) lists everyday commands and controls.
-- [Architecture](docs/ARCHITECTURE.md) follows a byte through the emulator.
-- [Compatibility](docs/COMPATIBILITY.md) records exactly what has been tested.
-- [Constellation v0](docs/CONSTELLATION-V0.md) documents the isolated two-ROM
-  message-passing prototype.
-- [Why We Built a Small Virtual Computer](https://keeping.haus/why-we-built-a-small-virtual-computer/)
-  explains the larger idea behind the project.
+- [Memory lesson](lessons/01-memory.md) starts with a small C program you can
+  read and run. [Emulator architecture](docs/ARCHITECTURE.md) follows a byte
+  through the emulator.
+- [Compatibility record](docs/COMPATIBILITY.md) lists what has been tested.
+  Run `make verify-online` to fetch the upstream tests and try the emulator
+  with Hundred Rabbits programs.
+- [Constellation v0](docs/CONSTELLATION-V0.md), [routing experiments](docs/CONSTELLATION-ROUTES.md),
+  and the [shared runner](docs/CONSTELLATION-RUNNER.md) explain how ROMs send
+  messages, take turns, and replay recorded inputs.
+- [The Last Visitor](docs/MYSTERY-OPENING.md) is a locked-room mystery built to
+  compare how one or several ROMs handle clues and deductions. On macOS,
+  `make mystery` opens the local version. Try `make mystery-single` for the
+  one-ROM version or `make account-check` for the separate
+  [witness account study](docs/ACCOUNT-BOUNDARY.md). These experiments run
+  locally, outside the Playinghaus collection.
 
 ## Acknowledgements
 
-Uxn, Varvara, Uxntal, Drifblim, and the programs used for compatibility checks
-come from [Hundred Rabbits](https://100r.ca/site/uxn.html) and the wider Uxn
-community. This is an independent implementation, not an official Hundred
-Rabbits release.
+Thanks to [Hundred Rabbits](https://100r.ca/site/uxn.html) and the wider Uxn
+community for Uxn, Varvara, Uxntal, Drifblim, and the programs used in the
+compatibility checks. This is an independent implementation.
 
-## License
-
-The emulator source and its documentation are available under the
-[MIT License](LICENSE).
+The source and documentation are available under the [MIT License](LICENSE).
